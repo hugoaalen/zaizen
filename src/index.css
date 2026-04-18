@@ -1,0 +1,178 @@
+/* 1. Variables Globales (Modo Claro por defecto) */
+:root {
+  --bg-body: #f4f5f7;
+  --bg-card: #ffffff;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --input-bg: #f9fafb;
+  --btn-bg: #4f46e5;
+  --btn-text: #ffffff;
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  
+  /* Colores fijos para finanzas */
+  --color-income: #10b981;
+  --color-expense: #ef4444;
+}
+
+/* 2. Variables Modo Oscuro */
+[data-theme='dark'] {
+  --bg-body: #121212;
+  --bg-card: #1e1e1e;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-color: #333333;
+  --input-bg: #2a2a2a;
+  --btn-bg: #6366f1;
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* 3. Estilos Base */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* 4. Clases Minimalistas Reutilizables */
+.card {
+  background-color: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.input-minimal {
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 6px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s ease;
+  color-scheme: light dark; /* Para que el calendario nativo cambie a oscuro */
+}
+
+.input-minimal:focus {
+  border-color: var(--text-muted);
+}
+
+.btn-minimal {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  padding: 12px 20px;
+  border-radius: 12px; /* Un poco más redondeado queda más moderno */
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  width: 100%; /* Para que ocupe todo el ancho y sea fácil de clicar */
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Sombra muy sutil */
+}
+
+/* 1. Comportamiento general del Hover (para ambos modos) */
+.btn-minimal:hover {
+  transform: translateY(-2px);
+  
+  opacity: 0.9;
+}
+
+/* 2. Hover específico para MODO CLARO */
+/* (Si no hay atributo de tema, o es light, el texto será negro al pasar el ratón) */
+.btn-minimal:hover {
+  background-color: var(--btn-hover);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  color: #000000; /* Aquí forzamos el negro que querías */
+}
+
+/* 3. Hover específico para MODO OSCURO */
+/* "Cuando el HTML tenga data-theme='dark', el botón dentro al hacer hover..." */
+[data-theme='dark'] .btn-minimal:hover {
+  box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.1);
+  color: #ffffff;           /* Texto blanco para que resalte en oscuro */
+}
+
+.btn-minimal:active {
+  transform: translateY(0px);
+}
+
+.btn-minimal:disabled {
+  background-color: var(--text-muted);
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.btn-outline:hover { background-color: var(--input-bg); }
+
+/* Ajustes para el DatePicker */
+.datepicker-full-width {
+  width: 100%;
+  display: block;
+}
+
+/* Estilizar el popup del calendario */
+.react-datepicker {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.react-datepicker__header {
+  background-color: var(--input-bg) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.react-datepicker__current-month, 
+.react-datepicker__day-name, 
+.react-datepicker__day {
+  color: var(--text-main) !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: var(--border-color) !important;
+  border-radius: 8px !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  border-radius: 8px !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: transparent !important;
+  border: 1px solid var(--btn-bg);
+  border-radius: 8px !important;
+}
+
+/* Elimina el recuadro de enfoque (outline) de todos los gráficos y SVGs */
+svg, 
+path, 
+.recharts-wrapper, 
+.recharts-surface, 
+.recharts-wrapper *:focus {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent; /* Quita el destello azul en móviles también */
+}
