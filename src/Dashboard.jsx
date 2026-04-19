@@ -13,6 +13,9 @@ export default function Dashboard({ session, theme, setTheme }) {
   const [transactions, setTransactions] = useState([])
   const [showSettings, setShowSettings] = useState(false) 
   
+  // NUEVO: Estado global para las categorías personalizadas
+  const [customCategories, setCustomCategories] = useState([])
+  
   const hoy = new Date()
   const [selectedMonth, setSelectedMonth] = useState(hoy.getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(hoy.getFullYear())
@@ -25,6 +28,12 @@ export default function Dashboard({ session, theme, setTheme }) {
     { value: 9, label: 'Septiembre' }, { value: 10, label: 'Octubre' },
     { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
   ]
+
+  // NUEVO: Función para cargar las categorías globales
+  const fetchCustomCategories = async () => {
+    const { data } = await supabase.from('custom_categories').select('*').order('name')
+    if (data) setCustomCategories(data)
+  }
 
   const fetchTransactions = async () => {
     const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
@@ -41,6 +50,11 @@ export default function Dashboard({ session, theme, setTheme }) {
     if (error) console.error('Error:', error)
     else setTransactions(data)
   }
+
+  // NUEVO: Cargar las categorías una vez al iniciar el Dashboard
+  useEffect(() => {
+    fetchCustomCategories()
+  }, [])
 
   useEffect(() => {
     if (view === 'monthly') fetchTransactions()
@@ -189,7 +203,6 @@ export default function Dashboard({ session, theme, setTheme }) {
                 style={{ 
                   flex: 1, 
                   backgroundColor: showSettings ? 'var(--text-main)' : 'transparent', 
-                  // AQUÍ ESTÁ LA MAGIA: Cambiamos bg-main por bg-card
                   color: showSettings ? 'var(--bg-card)' : 'var(--text-main)',
                   fontWeight: '700',
                   transition: 'all 0.3s ease'
@@ -202,15 +215,28 @@ export default function Dashboard({ session, theme, setTheme }) {
 
           {showSettings && (
             <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }} className="animate-fade-in">
-              <CategorySettings user={session.user} />
-              <RecurringManager user={session.user} />
+              {/* MODIFICADO: Pasamos la función onCategoryChanged para avisar de los cambios */}
+              <CategorySettings 
+                user={session.user} 
+                onCategoryChanged={fetchCustomCategories} 
+              />
+              {/* MODIFICADO: Pasamos la lista de categorías */}
+              <RecurringManager 
+                user={session.user} 
+                customCategories={customCategories} 
+              />
             </div>
           )}
 
           <MonthlySummary transactions={transactions} />
 
           <div className="card">
-            <ExpenseForm user={session.user} onTransactionAdded={fetchTransactions} />
+            {/* MODIFICADO: Pasamos la lista de categorías */}
+            <ExpenseForm 
+              user={session.user} 
+              onTransactionAdded={fetchTransactions} 
+              customCategories={customCategories} 
+            />
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
             <ExpenseChart transactions={transactions} />
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />

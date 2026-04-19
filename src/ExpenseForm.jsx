@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import { CATEGORY_MAP, BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import DatePicker, { registerLocale } from "react-datepicker"
@@ -7,7 +7,7 @@ import es from 'date-fns/locale/es'
 
 registerLocale('es', es)
 
-export default function ExpenseForm({ user, onTransactionAdded }) {
+export default function ExpenseForm({ user, onTransactionAdded, customCategories }) {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState('expense')
@@ -15,25 +15,10 @@ export default function ExpenseForm({ user, onTransactionAdded }) {
   const [category, setCategory] = useState('Varios')
   const [loading, setLoading] = useState(false)
   
-  // Estado para las categorías de la base de datos
-  const [customCategories, setCustomCategories] = useState([])
-
-  // Función para traer categorías personalizadas
-  const fetchCustomCategories = async () => {
-    const { data } = await supabase
-      .from('custom_categories')
-      .select('name, type')
-      .order('name', { ascending: true })
-    if (data) setCustomCategories(data)
-  }
-
-  useEffect(() => {
-    fetchCustomCategories()
-  }, [])
-
   const getAvailableCategories = () => {
     // 1. Filtramos las personalizadas del usuario por tipo (gasto/ingreso)
-    const userCats = customCategories
+    // Añadimos (customCategories || []) como red de seguridad
+    const userCats = (customCategories || [])
       .filter(c => c.type === type)
       .map(c => c.name)
 

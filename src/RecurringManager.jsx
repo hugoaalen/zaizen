@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 
-export default function RecurringManager({ user }) {
+export default function RecurringManager({ user, customCategories }) {
   const [subs, setSubs] = useState([])
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState('expense')
   const [targetMonth, setTargetMonth] = useState('all')
   const [category, setCategory] = useState('Varios')
-  const [customCategories, setCustomCategories] = useState([])
 
   const months = [
     { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' },
@@ -25,19 +24,15 @@ export default function RecurringManager({ user }) {
     if (data) setSubs(data)
   }
 
-  const fetchCategories = async () => {
-    const { data } = await supabase.from('custom_categories').select('name, type')
-    if (data) setCustomCategories(data)
-  }
-
+  // Ya solo cargamos las suscripciones, las categorías nos las da el Dashboard
   useEffect(() => { 
     fetchSubs()
-    fetchCategories()
   }, [])
 
   const getAvailableCategories = () => {
     // 1. Filtramos las personalizadas del usuario por tipo
-    const userCats = customCategories
+    // Añadimos || [] por si en el primer milisegundo customCategories viene vacío
+    const userCats = (customCategories || [])
       .filter(c => c.type === type)
       .map(c => c.name)
 
@@ -83,11 +78,11 @@ export default function RecurringManager({ user }) {
         </select>
 
         <select className="input-minimal" style={{ width: '120px' }} value={targetMonth} onChange={e => setTargetMonth(e.target.value)}>
-          <option value="all">🔄 Mensual</option>
+          <option value="all">Mensual</option>
           {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
 
-        <button type="submit" className="btn-minimal" style={{ width: 'auto' }}>+</button>
+        <button type="submit" className="btn-minimal" style={{ width: 'auto' }}>＋</button>
       </form>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

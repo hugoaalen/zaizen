@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
-export default function CategorySettings({ user }) {
+export default function CategorySettings({ user, onCategoryChanged }) {
   const [newCat, setNewCat] = useState('')
   const [type, setType] = useState('expense')
   const [categories, setCategories] = useState([])
@@ -20,17 +20,26 @@ export default function CategorySettings({ user }) {
     e.preventDefault()
     if (!newCat) return
     
-    await supabase.from('custom_categories').insert([
+    const { error } = await supabase.from('custom_categories').insert([
       { user_id: user.id, name: newCat, type: type }
     ])
     
-    setNewCat('')
-    fetchCategories()
+    if (error) {
+      console.error("Error detallado:", error)
+      alert("Error al guardar: " + error.message)
+    } else {
+      setNewCat('')
+      fetchCategories()
+      // NUEVO: Avisamos al Dashboard de que hay categorías nuevas
+      if (onCategoryChanged) onCategoryChanged() 
+    }
   }
 
   const deleteCategory = async (id) => {
     await supabase.from('custom_categories').delete().eq('id', id)
     fetchCategories()
+    // NUEVO: Avisamos al Dashboard de que hemos borrado una
+    if (onCategoryChanged) onCategoryChanged() 
   }
 
   return (
@@ -59,26 +68,39 @@ export default function CategorySettings({ user }) {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {categories.length === 0 && <p style={{fontSize: '12px', color: 'var(--text-muted)'}}>No tienes categorías personalizadas.</p>}
-        {categories.map(c => (
-          <div key={c.id} style={{ 
-            background: 'var(--input-bg)', 
-            padding: '6px 12px', 
-            borderRadius: '20px', 
-            fontSize: '12px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px',
-            border: '1px solid var(--border-color)'
-          }}>
-            <span>{c.type === 'income' ? '💰' : '💸'} {c.name}</span>
-            <button 
-              onClick={() => deleteCategory(c.id)} 
-              style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, fontSize: '14px' }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+        {categories.map(c => {
+          const isIncome = c.type === 'income'
+          
+          return (
+            <div key={c.id} style={{ 
+              background: isIncome ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+              color: isIncome ? 'var(--color-income)' : 'var(--color-expense)',
+              padding: '6px 12px', 
+              borderRadius: '20px', 
+              fontSize: '12px', 
+              fontWeight: '500',
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              border: isIncome ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
+            }}>
+              <span>{isIncome ? '💰' : '💸'} {c.name}</span>
+              <button 
+                onClick={() => deleteCategory(c.id)} 
+                style={{ 
+                  border: 'none', 
+                  background: 'none', 
+                  cursor: 'pointer', 
+                  padding: 0, 
+                  fontSize: '14px',
+                  color: isIncome ? 'var(--color-income)' : 'var(--color-expense)'
+                }}
+              >
+                ×
+              </button>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
