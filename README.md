@@ -1,18 +1,48 @@
-# React + Vite
+# ⛩️ ZaiZen - Finanzas en Equilibrio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![ZaiZen Cover](https://via.placeholder.com/1200x600?text=ZaiZen+-+Tu+Panel+Financiero+Zen) 
 
-Currently, two official plugins are available:
+## 🧘‍♂️ ¿Qué es ZaiZen?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El nombre **ZaiZen** nace de la fusión de dos conceptos japoneses que definen la esencia de la aplicación:
+* **Zai (財):** Finanzas, dinero o riqueza.
+* **Zen (禅):** Equilibrio, calma y paz mental.
 
-## React Compiler
+**ZaiZen** es una aplicación web minimalista de gestión de finanzas personales diseñada para eliminar el estrés del control de gastos. Combina un diseño limpio e intuitivo con herramientas de análisis potentes para darte una visión clara y en calma de tu salud financiera.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+---
 
-Note: This will impact Vite dev & build performances.
+## ✨ Características Principales
 
-## Expanding the ESLint configuration
+* 📊 **Dashboard Interactivo:** Vistas mensuales y anuales con gráficos dinámicos (Donut y Barras) para analizar tus ingresos y gastos de un vistazo.
+* 🧠 **Categorización Inteligente:** Un motor ligero que clasifica automáticamente tus gastos mientras escribes la descripción (ej: "Netflix" -> Suscripciones).
+* ⚙️ **Gestor de Gastos Fijos:** Configura suscripciones o nóminas recurrentes y aplícalos a tu mes con un solo clic.
+* 🏷️ **Categorías Personalizadas:** Crea y gestiona tus propias etiquetas de gastos e ingresos, adaptadas a tu estilo de vida.
+* 🌗 **Modo Oscuro/Claro:** Interfaz adaptable a tus preferencias visuales.
+* 📱 **Diseño Mobile-First:** Experiencia fluida y responsiva tanto en escritorio como en dispositivos móviles (CSS Grid & Flexbox).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tecnologías Utilizadas
+
+* **Frontend:** React + Vite
+* **Estilos:** CSS3 (Custom Properties para Theming + Flexbox/Grid).
+* **Gráficos:** [Recharts](https://recharts.org/)
+* **Componentes:** `react-datepicker`
+* **Backend & Base de Datos:** [Supabase](https://supabase.com/) (Autenticación y PostgreSQL)
+* **Despliegue:** Vercel
+
+## 🤝 Contribución
+
+Si quieres mejorar **ZaiZen**, ¡las contribuciones son bienvenidas!
+
+1. Haz un Fork del proyecto.
+2. Crea tu rama de características (`git checkout -b feature/NuevaCaracteristica`).
+3. Haz Commit de tus cambios (`git commit -m 'Añadir nueva característica'`).
+4. Haz Push a la rama (`git push origin feature/NuevaCaracteristica`).
+5. Abre un Pull Request.
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT.
+
+---
+**Desarrollado con ❤️ y ☕ por Hugo Alén.**
