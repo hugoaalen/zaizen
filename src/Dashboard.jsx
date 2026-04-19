@@ -5,13 +5,14 @@ import ExpenseChart from './ExpenseChart'
 import TransactionList from './TransactionList'
 import RecurringManager from './RecurringManager'
 import YearlyView from './YearlyView'
+import CategorySettings from './CategorySettings'
+import MonthlySummary from './MonthlySummary'
 
 export default function Dashboard({ session, theme, setTheme }) {
-  const [view, setView] = useState('monthly') // 'monthly' o 'yearly'
+  const [view, setView] = useState('monthly')
   const [transactions, setTransactions] = useState([])
-  const [showManager, setShowManager] = useState(false)
+  const [showSettings, setShowSettings] = useState(false) 
   
-  // 1. Estados para el filtro de tiempo mensual
   const hoy = new Date()
   const [selectedMonth, setSelectedMonth] = useState(hoy.getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(hoy.getFullYear())
@@ -25,7 +26,6 @@ export default function Dashboard({ session, theme, setTheme }) {
     { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
   ]
 
-  // 2. Cargar transacciones del mes
   const fetchTransactions = async () => {
     const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
     const lastDayOfMonth = new Date(selectedYear, selectedMonth, 0).getDate()
@@ -49,47 +49,44 @@ export default function Dashboard({ session, theme, setTheme }) {
   const handleLogout = async () => await supabase.auth.signOut()
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
 
-  // 3. Lógica para aplicar Gastos Fijos
   const applyRecurring = async () => {
-  // 1. Traer plantillas: que el mes sea NULL (mensual) O que coincida con el mes seleccionado
-  const { data: subs, error: fetchError } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .or(`month.is.null,month.eq.${selectedMonth}`); // Esta es la clave
+    const { data: subs, error: fetchError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .or(`month.is.null,month.eq.${selectedMonth}`);
 
-  if (!subs || subs.length === 0) {
-    alert("No hay gastos fijos configurados para este mes.");
-    return;
+    if (!subs || subs.length === 0) {
+      alert("No hay gastos fijos configurados para este mes.");
+      return;
+    }
+
+    const subsToInsert = subs.filter(sub => {
+      const fixedDescription = `[Fijo] ${sub.description}`;
+      return !transactions.some(t => t.description === fixedDescription);
+    });
+
+    if (subsToInsert.length === 0) {
+      alert("Ya has aplicado los movimientos fijos de este mes.");
+      return;
+    }
+
+    const fechaToInsert = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+    const finalData = subsToInsert.map(s => ({
+      user_id: session.user.id,
+      amount: s.amount,
+      description: `[Fijo] ${s.description}`,
+      type: s.type,
+      date: fechaToInsert,
+      category: s.category || 'Varios'
+    }));
+
+    const { error } = await supabase.from('transactions').insert(finalData);
+    
+    if (!error) {
+      alert(`Se han añadido ${subsToInsert.length} movimientos.`);
+      fetchTransactions();
+    }
   }
-
-  // 2. Evitar duplicados (mantenemos la lógica anterior)
-  const subsToInsert = subs.filter(sub => {
-    const fixedDescription = `[Fijo] ${sub.description}`;
-    return !transactions.some(t => t.description === fixedDescription);
-  });
-
-  if (subsToInsert.length === 0) {
-    alert("Ya has aplicado los movimientos fijos de este mes.");
-    return;
-  }
-
-  // 3. Insertar
-  const fechaToInsert = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-  const finalData = subsToInsert.map(s => ({
-    user_id: session.user.id,
-    amount: s.amount,
-    description: `[Fijo] ${s.description}`,
-    type: s.type,
-    date: fechaToInsert
-  }));
-
-  const { error } = await supabase.from('transactions').insert(finalData);
-  
-  if (!error) {
-    alert(`Se han añadido ${subsToInsert.length} movimientos.`);
-    fetchTransactions();
-  }
-}
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
@@ -146,36 +143,72 @@ export default function Dashboard({ session, theme, setTheme }) {
         </button>
       </div>
 
-      {/* RENDERIZADO CONDICIONAL SEGÚN LA VISTA */}
       {view === 'monthly' ? (
         <>
-          {/* FILTROS Y ACCIONES RÁPIDAS (Solo en mensual) */}
+          {/* FILTROS Y ACCIONES RÁPIDAS */}
           <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div className="card" style={{ padding: '16px 24px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <div className="card" style={{ padding: '16px 24px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
               <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>Filtrar por:</span>
-              <select className="input-minimal" style={{ width: '150px', marginTop: '0' }} value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
+              
+              <select className="input-minimal" style={{ flex: '1 1 120px', marginTop: '0' }} value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
                 {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
-              <input type="number" className="input-minimal" value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} style={{ width: '100px', marginTop: '0' }} />
+
+              {/* SELECTOR DE AÑO CON FLECHAS */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                background: 'var(--input-bg)', 
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)',
+                flex: '0 1 140px',
+                justifyContent: 'space-between'
+              }}>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedYear(y => y - 1)} 
+                  style={{ background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--text-main)' }}
+                >◀</button>
+                <span style={{ fontWeight: '700' }}>{selectedYear}</span>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedYear(y => y + 1)} 
+                  style={{ background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--text-main)' }}
+                >▶</button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={applyRecurring} className="btn-minimal" style={{ flex: 1, backgroundColor: 'var(--color-income)', color: 'white' }}>
                 ⚡ Aplicar fijos
               </button>
-              <button onClick={() => setShowManager(!showManager)} className="btn-outline" style={{ flex: 1 }}>
-                {showManager ? 'Cerrar Gestor' : '⚙️ Configurar Fijos'}
+              
+              <button 
+                onClick={() => setShowSettings(!showSettings)} 
+                className="btn-outline" 
+                style={{ 
+                  flex: 1, 
+                  backgroundColor: showSettings ? 'var(--text-main)' : 'transparent', 
+                  // AQUÍ ESTÁ LA MAGIA: Cambiamos bg-main por bg-card
+                  color: showSettings ? 'var(--bg-card)' : 'var(--text-main)',
+                  fontWeight: '700',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {showSettings ? '✕ Cerrar Ajustes' : '⚙️ Ajustes y Categorías'}
               </button>
             </div>
           </div>
 
-          {showManager && (
-            <div style={{ marginBottom: '20px' }}>
+          {showSettings && (
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }} className="animate-fade-in">
+              <CategorySettings user={session.user} />
               <RecurringManager user={session.user} />
             </div>
           )}
 
-          {/* CONTENIDO PRINCIPAL MENSUAL */}
+          <MonthlySummary transactions={transactions} />
+
           <div className="card">
             <ExpenseForm user={session.user} onTransactionAdded={fetchTransactions} />
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
@@ -185,7 +218,6 @@ export default function Dashboard({ session, theme, setTheme }) {
           </div>
         </>
       ) : (
-        /* VISTA ANUAL */
         <YearlyView session={session} />
       )}
     </div>

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 
 export default function RecurringManager({ user }) {
   const [subs, setSubs] = useState([])
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState('expense')
-  
-  // NUEVO: Estado para el mes (all = todos los meses)
   const [targetMonth, setTargetMonth] = useState('all')
+  const [category, setCategory] = useState('Varios')
+  const [customCategories, setCustomCategories] = useState([])
 
   const months = [
     { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' },
@@ -20,118 +21,89 @@ export default function RecurringManager({ user }) {
   ]
 
   const fetchSubs = async () => {
-    const { data } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
     if (data) setSubs(data)
   }
 
-  useEffect(() => { fetchSubs() }, [])
+  const fetchCategories = async () => {
+    const { data } = await supabase.from('custom_categories').select('name, type')
+    if (data) setCustomCategories(data)
+  }
+
+  useEffect(() => { 
+    fetchSubs()
+    fetchCategories()
+  }, [])
+
+  const getAvailableCategories = () => {
+    // 1. Filtramos las personalizadas del usuario por tipo
+    const userCats = customCategories
+      .filter(c => c.type === type)
+      .map(c => c.name)
+
+    // 2. Usamos nuestras variables globales combinadas con las del usuario
+    return type === 'expense' 
+      ? [...new Set([...BASE_EXPENSE_CATEGORIES, ...userCats])]
+      : [...new Set([...BASE_INCOME_CATEGORIES, ...userCats])]
+  }
 
   const addSub = async (e) => {
     e.preventDefault()
-    
-    const { error } = await supabase.from('subscriptions').insert([{ 
+    await supabase.from('subscriptions').insert([{ 
       user_id: user.id, 
       amount: parseFloat(amount), 
       description, 
       type,
-      // Si es 'all' enviamos null, si no, el número del mes
+      category,
       month: targetMonth === 'all' ? null : parseInt(targetMonth) 
     }])
-
-    if (error) {
-      alert('Error al añadir: ' + error.message)
-    } else {
-      setAmount('')
-      setDescription('')
-      setTargetMonth('all')
-      fetchSubs()
-    }
+    setAmount(''); setDescription(''); setCategory('Varios'); fetchSubs()
   }
 
   const deleteSub = async (id) => {
-    const { error } = await supabase.from('subscriptions').delete().eq('id', id)
-    if (!error) fetchSubs()
+    await supabase.from('subscriptions').delete().eq('id', id)
+    fetchSubs()
   }
 
   return (
-    <div className="card" style={{ marginTop: '20px', borderStyle: 'dashed', borderColor: 'var(--border-color)' }}>
-      <h4 style={{ marginBottom: '15px', fontSize: '16px' }}>Configurar Movimientos Fijos</h4>
+    <div className="card" style={{ marginTop: '20px', borderStyle: 'dashed' }}>
+      <h4 style={{ marginBottom: '15px' }}>Tus Gastos/Ingresos Fijos</h4>
       
       <form onSubmit={addSub} style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <input 
-          className="input-minimal" 
-          style={{ flex: '2 1 200px' }} 
-          placeholder="Descripción (ej: Sueldo)" 
-          value={description} 
-          onChange={e => setDescription(e.target.value)} 
-          required 
-        />
-        <input 
-          className="input-minimal" 
-          style={{ flex: '1 1 80px' }} 
-          type="number" 
-          step="0.01" 
-          placeholder="€" 
-          value={amount} 
-          onChange={e => setAmount(e.target.value)} 
-          required 
-        />
+        <input className="input-minimal" style={{ flex: '2 1 180px' }} placeholder="Nombre (ej: Alquiler)" value={description} onChange={e => setDescription(e.target.value)} required />
+        <input className="input-minimal" style={{ width: '90px' }} type="number" step="0.01" placeholder="€" value={amount} onChange={e => setAmount(e.target.value)} required />
         
-        <select className="input-minimal" style={{ flex: '1 1 100px' }} value={type} onChange={e => setType(e.target.value)}>
+        <select className="input-minimal" style={{ width: '110px' }} value={type} onChange={e => { setType(e.target.value); setCategory('Varios'); }}>
           <option value="expense">Gasto</option>
           <option value="income">Ingreso</option>
         </select>
 
-        {/* SELECTOR DE PERIODICIDAD */}
-        <select className="input-minimal" style={{ flex: '1 1 120px' }} value={targetMonth} onChange={e => setTargetMonth(e.target.value)}>
-          <option value="all">🔄 Mensual</option>
-          <optgroup label="Mes específico">
-            {months.map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </optgroup>
+        <select className="input-minimal" style={{ width: '130px' }} value={category} onChange={e => setCategory(e.target.value)}>
+          {getAvailableCategories().map(c => <option key={c} value={c}>{c}</option>)}
         </select>
 
-        <button type="submit" className="btn-minimal" style={{ width: '45px' }}>+</button>
+        <select className="input-minimal" style={{ width: '120px' }} value={targetMonth} onChange={e => setTargetMonth(e.target.value)}>
+          <option value="all">🔄 Mensual</option>
+          {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+
+        <button type="submit" className="btn-minimal" style={{ width: 'auto' }}>+</button>
       </form>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {subs.length === 0 && <p style={{fontSize: '13px', color: 'var(--text-muted)'}}>No tienes movimientos fijos configurados.</p>}
         {subs.map(s => (
-          <div key={s.id} style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            fontSize: '13px', 
-            padding: '10px 15px', 
-            background: 'var(--input-bg)', 
-            borderRadius: '10px' 
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span style={{ fontWeight: '600' }}>{s.description}</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                {s.month 
-                  ? `📅 Solo en ${months.find(m => m.value === s.month)?.label}` 
-                  : '🔄 Todos los meses'}
-              </span>
+          <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'var(--input-bg)', borderRadius: '8px', fontSize: '13px' }}>
+            <div>
+              <div style={{ fontWeight: '600' }}>{s.description}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {s.category} • {s.month ? `Solo en ${months.find(m => m.value === s.month)?.label}` : 'Todos los meses'}
+              </div>
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <span style={{ 
-                fontWeight: '700', 
-                color: s.type === 'income' ? 'var(--color-income)' : 'var(--color-expense)' 
-              }}>
-                {s.type === 'income' ? '+' : '-'}{Number(s.amount).toFixed(2)}€
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontWeight: '700', color: s.type === 'income' ? 'var(--color-income)' : 'var(--color-expense)' }}>
+                {s.type === 'income' ? '+' : '-'}{s.amount}€
               </span>
-              <button 
-                onClick={() => deleteSub(s.id)} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5, fontSize: '14px' }}
-              >
-                ❌
-              </button>
+              <button onClick={() => deleteSub(s.id)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>❌</button>
             </div>
           </div>
         ))}
