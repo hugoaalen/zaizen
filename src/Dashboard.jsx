@@ -31,7 +31,7 @@ export default function Dashboard({ session, theme, setTheme }) {
 
   // NUEVO: Función para cargar las categorías globales
   const fetchCustomCategories = async () => {
-    const { data } = await supabase.from('custom_categories').select('*').order('name')
+    const { data } = await supabase.from('custom_categories').select('*').eq('user_id', session.user.id).order('name')
     if (data) setCustomCategories(data)
   }
 
