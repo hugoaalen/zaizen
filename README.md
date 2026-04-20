@@ -1,6 +1,6 @@
 # ⛩️ ZaiZen - Finanzas en Equilibrio
 
-![ZaiZen Cover](https://via.placeholder.com/1200x600?text=ZaiZen+-+Tu+Panel+Financiero+Zen) 
+![ZaiZen Cover](/public/Preview.png) 
 
 ## 🧘‍♂️ ¿Qué es ZaiZen?
 
