@@ -7,15 +7,23 @@ import RecurringManager from './RecurringManager'
 import YearlyView from './YearlyView'
 import CategorySettings from './CategorySettings'
 import MonthlySummary from './MonthlySummary'
+import SettingsPanel from './SettingsPanel'
 
 export default function Dashboard({ session, theme, setTheme }) {
   const [view, setView] = useState('monthly')
   const [transactions, setTransactions] = useState([])
-  const [showSettings, setShowSettings] = useState(false) 
-  
-  // NUEVO: Estado global para las categorías personalizadas
   const [customCategories, setCustomCategories] = useState([])
-  
+
+  const [chartTypeMonthly, setChartTypeMonthly] = useState(() => localStorage.getItem('chartTypeMonthly') || 'circular')
+  const [chartTypeYearly, setChartTypeYearly] = useState(() => localStorage.getItem('chartTypeYearly') || 'barras')
+  const [chartPalette, setChartPalette] = useState(() => localStorage.getItem('chartPalette') || 'normal')
+
+  const [showSettings, setShowSettings] = useState(false)
+
+  const persistMonthlyType = (v) => { setChartTypeMonthly(v); localStorage.setItem('chartTypeMonthly', v) }
+  const persistYearlyType = (v) => { setChartTypeYearly(v); localStorage.setItem('chartTypeYearly', v) }
+  const persistPalette = (v) => { setChartPalette(v); localStorage.setItem('chartPalette', v) }
+
   const hoy = new Date()
   const [selectedMonth, setSelectedMonth] = useState(hoy.getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(hoy.getFullYear())
@@ -29,7 +37,6 @@ export default function Dashboard({ session, theme, setTheme }) {
     { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
   ]
 
-  // NUEVO: Función para cargar las categorías globales
   const fetchCustomCategories = async () => {
     const { data } = await supabase.from('custom_categories').select('*').eq('user_id', session.user.id).order('name')
     if (data) setCustomCategories(data)
@@ -51,11 +58,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     else setTransactions(data)
   }
 
-  // NUEVO: Cargar las categorías una vez al iniciar el Dashboard
-  useEffect(() => {
-    fetchCustomCategories()
-  }, [])
-
+  useEffect(() => { fetchCustomCategories() }, [])
   useEffect(() => {
     if (view === 'monthly') fetchTransactions()
   }, [selectedMonth, selectedYear, view])
@@ -64,7 +67,7 @@ export default function Dashboard({ session, theme, setTheme }) {
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
 
   const applyRecurring = async () => {
-    const { data: subs, error: fetchError } = await supabase
+    const { data: subs } = await supabase
       .from('subscriptions')
       .select('*')
       .or(`month.is.null,month.eq.${selectedMonth}`);
@@ -113,12 +116,69 @@ export default function Dashboard({ session, theme, setTheme }) {
             : `Panel de ${session.user.email.split('@')[0]}`}
         </h2>
         <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={() => setShowSettings(true)} className="btn-outline" style={{ fontSize: '20px', padding: '8px 12px', lineHeight: 1 }}>⚙️</button>
           <button onClick={toggleTheme} className="btn-outline">
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
           <button onClick={handleLogout} className="btn-outline">Cerrar sesión</button>
         </div>
       </header>
+
+      {/* SETTINGS PANEL (slide-in drawer) */}
+      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)}>
+        <CategorySettings
+          user={session.user}
+          onCategoryChanged={fetchCustomCategories}
+        />
+
+        <RecurringManager
+          user={session.user}
+          customCategories={customCategories}
+        />
+
+        <div className="card">
+          <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '700' }}>Estilo de Gráficos</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Gráfico mensual</label>
+              <select
+                className="input-minimal"
+                value={chartTypeMonthly}
+                onChange={e => persistMonthlyType(e.target.value)}
+                style={{ marginTop: 0 }}
+              >
+                <option value="circular">Circular (donut)</option>
+                <option value="barras">Barras</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Gráfico anual</label>
+              <select
+                className="input-minimal"
+                value={chartTypeYearly}
+                onChange={e => persistYearlyType(e.target.value)}
+                style={{ marginTop: 0 }}
+              >
+                <option value="barras">Barras</option>
+                <option value="lineas">Líneas</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Paleta de colores</label>
+              <select
+                className="input-minimal"
+                value={chartPalette}
+                onChange={e => persistPalette(e.target.value)}
+                style={{ marginTop: 0 }}
+              >
+                <option value="normal">Normal</option>
+                <option value="pastel">Pastel</option>
+                <option value="vibrante">Vibrante</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </SettingsPanel>
 
       {/* SELECTOR DE VISTA (TABS) */}
       <div style={{ 
@@ -168,83 +228,45 @@ export default function Dashboard({ session, theme, setTheme }) {
                 {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
 
-              {/* SELECTOR DE AÑO CON FLECHAS */}
               <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                background: 'var(--input-bg)', 
-                borderRadius: '12px',
+                display: 'flex', alignItems: 'center',
+                background: 'var(--input-bg)', borderRadius: '12px',
                 border: '1px solid var(--border-color)',
-                flex: '0 1 140px',
-                justifyContent: 'space-between'
+                flex: '0 1 140px', justifyContent: 'space-between'
               }}>
-                <button 
-                  type="button"
-                  onClick={() => setSelectedYear(y => y - 1)} 
+                <button type="button"
+                  onClick={() => setSelectedYear(y => y - 1)}
                   style={{ background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--text-main)' }}
                 >◀</button>
                 <span style={{ fontWeight: '700' }}>{selectedYear}</span>
-                <button 
-                  type="button"
-                  onClick={() => setSelectedYear(y => y + 1)} 
+                <button type="button"
+                  onClick={() => setSelectedYear(y => y + 1)}
                   style={{ background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--text-main)' }}
                 >▶</button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={applyRecurring} className="btn-minimal" style={{ flex: 1, backgroundColor: 'var(--color-income)', color: 'white' }}>
-                ⚡ Aplicar fijos
-              </button>
-              
-              <button 
-                onClick={() => setShowSettings(!showSettings)} 
-                className="btn-outline" 
-                style={{ 
-                  flex: 1, 
-                  backgroundColor: showSettings ? 'var(--text-main)' : 'transparent', 
-                  color: showSettings ? 'var(--bg-card)' : 'var(--text-main)',
-                  fontWeight: '700',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {showSettings ? '✕ Cerrar Ajustes' : '⚙️ Ajustes y Categorías'}
-              </button>
-            </div>
+            <button onClick={applyRecurring} className="btn-minimal" style={{ backgroundColor: 'var(--color-income)', color: 'white' }}>
+              ⚡ Aplicar fijos
+            </button>
           </div>
-
-          {showSettings && (
-            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }} className="animate-fade-in">
-              {/* MODIFICADO: Pasamos la función onCategoryChanged para avisar de los cambios */}
-              <CategorySettings 
-                user={session.user} 
-                onCategoryChanged={fetchCustomCategories} 
-              />
-              {/* MODIFICADO: Pasamos la lista de categorías */}
-              <RecurringManager 
-                user={session.user} 
-                customCategories={customCategories} 
-              />
-            </div>
-          )}
 
           <MonthlySummary transactions={transactions} />
 
           <div className="card">
-            {/* MODIFICADO: Pasamos la lista de categorías */}
             <ExpenseForm 
               user={session.user} 
               onTransactionAdded={fetchTransactions} 
               customCategories={customCategories} 
             />
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-            <ExpenseChart transactions={transactions} />
+            <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
             <TransactionList transactions={transactions} onTransactionDeleted={fetchTransactions} />
           </div>
         </>
       ) : (
-        <YearlyView session={session} />
+        <YearlyView session={session} chartType={chartTypeYearly} palette={chartPalette} />
       )}
     </div>
   )
