@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient'
 import { CATEGORY_MAP, BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import DatePicker, { registerLocale } from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
-import es from 'date-fns/locale/es'
+import { es } from 'date-fns/locale/es'
 
 registerLocale('es', es)
 
