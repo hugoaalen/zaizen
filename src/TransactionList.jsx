@@ -40,9 +40,22 @@ export default function TransactionList({ transactions, onTransactionDeleted }) 
           >
             <div>
               <p style={{ fontWeight: '600', marginBottom: '4px' }}>{t.description}</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {new Date(t.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {new Date(t.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                </p>
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  background: t.type === 'income' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  color: t.type === 'income' ? 'var(--color-income)' : 'var(--color-expense)',
+                  border: t.type === 'income' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                }}>
+                  {t.category}
+                </span>
+              </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>

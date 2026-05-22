@@ -28,14 +28,29 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
       : [...new Set([...BASE_INCOME_CATEGORIES, ...userCats])]
   }
 
+  const normalize = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
   const handleDescriptionChange = (e) => {
     const val = e.target.value
     setDescription(val)
 
     if (type === 'expense') {
-      const valLower = val.toLowerCase()
+      const valNorm = normalize(val)
+      const words = valNorm.split(/\s+/)
+
+      const userCats = (customCategories || []).filter(c => c.type === 'expense').map(c => c.name)
+      const matchedUserCat = userCats.find(cat => valNorm.includes(normalize(cat)))
+      if (matchedUserCat) {
+        setCategory(matchedUserCat)
+        return
+      }
+
       for (const [cat, keywords] of Object.entries(CATEGORY_MAP)) {
-        if (keywords.some(keyword => valLower.includes(keyword))) {
+        const normKeywords = keywords.map(normalize)
+        if (
+          normKeywords.some(keyword => valNorm.includes(keyword)) ||
+          words.some(word => normKeywords.some(kw => kw.length > 2 && word.includes(kw)))
+        ) {
           setCategory(cat.charAt(0).toUpperCase() + cat.slice(1))
           break
         }
