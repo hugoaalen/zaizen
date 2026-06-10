@@ -11,6 +11,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
     const { data, error } = await supabase
       .from('custom_categories')
       .select('*')
+      .eq('user_id', user.id)
       .order('name')
     if (error) setErrorMessage('No se pudieron cargar las categorías.')
     else setCategories(data)
@@ -22,6 +23,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
       const { data, error } = await supabase
         .from('custom_categories')
         .select('*')
+        .eq('user_id', user.id)
         .order('name')
       if (!active) return
       if (error) setErrorMessage('No se pudieron cargar las categorías.')
@@ -29,7 +31,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
     }
     loadCategories()
     return () => { active = false }
-  }, [])
+  }, [user.id])
 
   const addCategory = async (e) => {
     e.preventDefault()
@@ -52,7 +54,11 @@ export default function CategorySettings({ user, onCategoryChanged }) {
   }
 
   const deleteCategory = async (id) => {
-    const { error } = await supabase.from('custom_categories').delete().eq('id', id)
+    const { error } = await supabase
+      .from('custom_categories')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
     if (error) {
       setErrorMessage('No se pudo eliminar la categoría.')
       return
@@ -63,66 +69,53 @@ export default function CategorySettings({ user, onCategoryChanged }) {
   }
 
   return (
-    <div className="card" style={{ marginTop: '20px', borderStyle: 'dashed', borderColor: 'var(--border-color)' }}>
-      <h4 style={{ marginBottom: '15px', fontSize: '16px' }}>Mis Categorías</h4>
-      
-      <form onSubmit={addCategory} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <input 
-          className="input-minimal" 
-          placeholder="Ej: Gimnasio o Nómina" 
-          value={newCat} 
-          onChange={e => setNewCat(e.target.value)} 
-          style={{ flex: 1 }}
-        />
-        <select 
-          className="input-minimal" 
-          value={type} 
-          onChange={e => setType(e.target.value)}
-          style={{ width: 'auto' }}
-        >
-          <option value="expense">Gasto</option>
-          <option value="income">Ingreso</option>
-        </select>
-        <button type="submit" className="btn-minimal" style={{ width: '45px' }}>+</button>
+    <section className="settings-section">
+      <div className="settings-section-heading">
+        <div>
+          <h3>Categorías personalizadas</h3>
+          <p>Adapta ingresos y gastos a tu forma de organizarte.</p>
+        </div>
+        <span className="settings-count">{categories.length}</span>
+      </div>
+
+      <form onSubmit={addCategory} className="settings-form category-form">
+        <label>
+          Nombre
+          <input
+            className="input-minimal"
+            placeholder="Ej: Gimnasio"
+            value={newCat}
+            onChange={e => setNewCat(e.target.value)}
+            required
+          />
+        </label>
+        <label>
+          Tipo
+          <select className="input-minimal" value={type} onChange={e => setType(e.target.value)}>
+            <option value="expense">Gasto</option>
+            <option value="income">Ingreso</option>
+          </select>
+        </label>
+        <button type="submit" className="btn-minimal settings-add-button">Añadir</button>
       </form>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {categories.length === 0 && <p style={{fontSize: '12px', color: 'var(--text-muted)'}}>No tienes categorías personalizadas.</p>}
+      <div className="category-list">
+        {categories.length === 0 && <p className="settings-empty">No tienes categorías personalizadas.</p>}
         {categories.map(c => {
           const isIncome = c.type === 'income'
-          
           return (
-            <div key={c.id} style={{ 
-              background: isIncome ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-              color: isIncome ? 'var(--color-income)' : 'var(--color-expense)',
-              padding: '6px 12px', 
-              borderRadius: '20px', 
-              fontSize: '12px', 
-              fontWeight: '500',
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              border: isIncome ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
-            }}>
-              <span>{isIncome ? '💰' : '💸'} {c.name}</span>
-              <button 
-                onClick={() => deleteCategory(c.id)} 
-                style={{ 
-                  border: 'none', 
-                  background: 'none', 
-                  cursor: 'pointer', 
-                  padding: 0, 
-                  fontSize: '14px',
-                  color: isIncome ? 'var(--color-income)' : 'var(--color-expense)'
-                }}
-              >
-                ×
-              </button>
+            <div key={c.id} className="category-row">
+              <span className={`category-type-dot ${isIncome ? 'income' : 'expense'}`} />
+              <div>
+                <strong>{c.name}</strong>
+                <small>{isIncome ? 'Ingreso' : 'Gasto'}</small>
+              </div>
+              <button className="icon-button" onClick={() => deleteCategory(c.id)} aria-label={`Eliminar categoría ${c.name}`}>×</button>
             </div>
           )
         })}
       </div>
       {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
-    </div>
+    </section>
   )
 }

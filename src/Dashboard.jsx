@@ -1,19 +1,48 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useCallback, useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-import ExpenseForm from './ExpenseForm'
 import TransactionList from './TransactionList'
 import RecurringManager from './RecurringManager'
 import CategorySettings from './CategorySettings'
 import MonthlySummary from './MonthlySummary'
 import SettingsPanel from './SettingsPanel'
 import BudgetManager from './BudgetManager'
+import TransactionModal from './TransactionModal'
+import CollapsibleSection from './CollapsibleSection'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
 
+const getMonthRange = (year, month) => ({
+  firstDay: `${year}-${String(month).padStart(2, '0')}-01`,
+  lastDay: `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+})
+
+const loadMonthlyTransactions = async (userId, year, month) => {
+  const currentRange = getMonthRange(year, month)
+  const previousDate = new Date(year, month - 2, 1)
+  const previousRange = getMonthRange(previousDate.getFullYear(), previousDate.getMonth() + 1)
+
+  return Promise.all([
+    supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', currentRange.firstDay)
+      .lte('date', currentRange.lastDay)
+      .order('date', { ascending: false }),
+    supabase
+      .from('transactions')
+      .select('amount,type,category,date')
+      .eq('user_id', userId)
+      .gte('date', previousRange.firstDay)
+      .lte('date', previousRange.lastDay)
+  ])
+}
+
 export default function Dashboard({ session, theme, setTheme }) {
   const [view, setView] = useState('monthly')
   const [transactions, setTransactions] = useState([])
+  const [previousTransactions, setPreviousTransactions] = useState([])
   const [customCategories, setCustomCategories] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -22,6 +51,9 @@ export default function Dashboard({ session, theme, setTheme }) {
   const [chartPalette, setChartPalette] = useState(() => localStorage.getItem('chartPalette') || 'normal')
 
   const [showSettings, setShowSettings] = useState(false)
+  const [newTransactionType, setNewTransactionType] = useState(null)
+  const closeSettings = useCallback(() => setShowSettings(false), [])
+  const closeTransactionModal = useCallback(() => setNewTransactionType(null), [])
 
   const persistMonthlyType = (v) => { setChartTypeMonthly(v); localStorage.setItem('chartTypeMonthly', v) }
   const persistYearlyType = (v) => { setChartTypeYearly(v); localStorage.setItem('chartTypeYearly', v) }
@@ -41,22 +73,19 @@ export default function Dashboard({ session, theme, setTheme }) {
   ]
 
   const fetchTransactions = async () => {
-    const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
-    const lastDayOfMonth = new Date(selectedYear, selectedMonth, 0).getDate()
-    const lastDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${lastDayOfMonth}`
+    const [currentResult, previousResult] = await loadMonthlyTransactions(
+      session.user.id,
+      selectedYear,
+      selectedMonth
+    )
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .gte('date', firstDay)
-      .lte('date', lastDay)
-      .order('date', { ascending: false })
-
-    if (error) setErrorMessage('No se pudieron cargar los movimientos.')
+    if (currentResult.error || previousResult.error) {
+      setErrorMessage('No se pudieron cargar las comparativas mensuales.')
+    }
     else {
       setErrorMessage('')
-      setTransactions(data)
+      setTransactions(currentResult.data)
+      setPreviousTransactions(previousResult.data)
     }
   }
 
@@ -80,20 +109,20 @@ export default function Dashboard({ session, theme, setTheme }) {
     if (view !== 'monthly') return
     let active = true
     const loadTransactions = async () => {
-      const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
-      const lastDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${new Date(selectedYear, selectedMonth, 0).getDate()}`
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .gte('date', firstDay)
-        .lte('date', lastDay)
-        .order('date', { ascending: false })
+      const [currentResult, previousResult] = await loadMonthlyTransactions(
+        session.user.id,
+        selectedYear,
+        selectedMonth
+      )
+
       if (!active) return
-      if (error) setErrorMessage('No se pudieron cargar los movimientos.')
+      if (currentResult.error || previousResult.error) {
+        setErrorMessage('No se pudieron cargar las comparativas mensuales.')
+      }
       else {
         setErrorMessage('')
-        setTransactions(data)
+        setTransactions(currentResult.data)
+        setPreviousTransactions(previousResult.data)
       }
     }
     loadTransactions()
@@ -112,6 +141,89 @@ export default function Dashboard({ session, theme, setTheme }) {
 
   const handleLogout = async () => await supabase.auth.signOut()
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
+  const goToCurrentMonth = () => {
+    const today = new Date()
+    setSelectedMonth(today.getMonth() + 1)
+    setSelectedYear(today.getFullYear())
+  }
+
+  const settingsSections = [
+    {
+      id: 'categories',
+      label: 'Categorías',
+      icon: '⌑',
+      content: (
+        <CategorySettings
+          user={session.user}
+          onCategoryChanged={fetchCustomCategories}
+        />
+      )
+    },
+    {
+      id: 'recurring',
+      label: 'Recurrentes',
+      icon: '↻',
+      content: (
+        <RecurringManager
+          user={session.user}
+          customCategories={customCategories}
+        />
+      )
+    },
+    {
+      id: 'appearance',
+      label: 'Apariencia',
+      icon: '◐',
+      content: (
+        <section className="settings-section">
+          <div className="settings-section-heading">
+            <div>
+              <h3>Visualización</h3>
+              <p>Elige cómo quieres leer tus datos.</p>
+            </div>
+          </div>
+
+          <div className="appearance-group">
+            <span>Gráfico mensual</span>
+            <div className="segmented-control">
+              <button className={chartTypeMonthly === 'circular' ? 'active' : ''} onClick={() => persistMonthlyType('circular')}>Circular</button>
+              <button className={chartTypeMonthly === 'barras' ? 'active' : ''} onClick={() => persistMonthlyType('barras')}>Barras</button>
+            </div>
+          </div>
+
+          <div className="appearance-group">
+            <span>Gráfico anual</span>
+            <div className="segmented-control">
+              <button className={chartTypeYearly === 'barras' ? 'active' : ''} onClick={() => persistYearlyType('barras')}>Barras</button>
+              <button className={chartTypeYearly === 'lineas' ? 'active' : ''} onClick={() => persistYearlyType('lineas')}>Líneas</button>
+            </div>
+          </div>
+
+          <div className="appearance-group">
+            <span>Paleta de colores</span>
+            <div className="palette-options">
+              {[
+                { id: 'normal', label: 'Normal', colors: ['#6366f1', '#10b981', '#ef4444'] },
+                { id: 'pastel', label: 'Pastel', colors: ['#ddd6fe', '#86efac', '#fca5a5'] },
+                { id: 'vibrante', label: 'Vibrante', colors: ['#7c3aed', '#00c853', '#ff1744'] }
+              ].map(option => (
+                <button
+                  key={option.id}
+                  className={chartPalette === option.id ? 'active' : ''}
+                  onClick={() => persistPalette(option.id)}
+                >
+                  <span className="palette-preview">
+                    {option.colors.map(color => <i key={color} style={{ background: color }} />)}
+                  </span>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
+  ]
 
   const applyRecurring = async () => {
     const { data: subs } = await supabase
@@ -165,185 +277,123 @@ export default function Dashboard({ session, theme, setTheme }) {
   }
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
-      
-      {/* HEADER */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '700' }}>
-          {session.user.user_metadata?.full_name 
-            ? `Panel de ${session.user.user_metadata.full_name}` 
-            : `Panel de ${session.user.email.split('@')[0]}`}
-        </h2>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => setShowSettings(true)} className="btn-outline" style={{ fontSize: '20px', padding: '8px 12px', lineHeight: 1 }}>⚙️</button>
-          <button onClick={toggleTheme} className="btn-outline">
-            {theme === 'light' ? '🌙' : '☀️'}
+    <div className="dashboard-shell">
+      <header className="dashboard-topbar">
+        <div className="dashboard-brand">
+          <span>Z</span>
+          <div>
+            <strong>ZaiZen</strong>
+            <small>
+              {session.user.user_metadata?.full_name || session.user.email.split('@')[0]}
+            </small>
+          </div>
+        </div>
+        <div className="dashboard-topbar-actions">
+          <button onClick={toggleTheme} className="topbar-icon" aria-label="Cambiar tema">
+            {theme === 'light' ? '◐' : '◑'}
           </button>
-          <button onClick={handleLogout} className="btn-outline">Cerrar sesión</button>
+          <button onClick={() => setShowSettings(true)} className="topbar-icon" aria-label="Abrir ajustes">⚙</button>
+          <button onClick={handleLogout} className="btn-outline dashboard-logout">Salir</button>
         </div>
       </header>
 
-      {/* SETTINGS PANEL (slide-in drawer) */}
-      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)}>
-        <CategorySettings
-          user={session.user}
-          onCategoryChanged={fetchCustomCategories}
-        />
+      <SettingsPanel open={showSettings} onClose={closeSettings} sections={settingsSections} />
+      <TransactionModal
+        open={Boolean(newTransactionType)}
+        type={newTransactionType || 'expense'}
+        user={session.user}
+        customCategories={customCategories}
+        onClose={closeTransactionModal}
+        onTransactionAdded={fetchTransactions}
+      />
 
-        <RecurringManager
-          user={session.user}
-          customCategories={customCategories}
-        />
-
-        <div className="card">
-          <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '700' }}>Estilo de Gráficos</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <label style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Gráfico mensual</label>
-              <select
-                className="input-minimal"
-                value={chartTypeMonthly}
-                onChange={e => persistMonthlyType(e.target.value)}
-                style={{ marginTop: 0 }}
-              >
-                <option value="circular">Circular (donut)</option>
-                <option value="barras">Barras</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Gráfico anual</label>
-              <select
-                className="input-minimal"
-                value={chartTypeYearly}
-                onChange={e => persistYearlyType(e.target.value)}
-                style={{ marginTop: 0 }}
-              >
-                <option value="barras">Barras</option>
-                <option value="lineas">Líneas</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Paleta de colores</label>
-              <select
-                className="input-minimal"
-                value={chartPalette}
-                onChange={e => persistPalette(e.target.value)}
-                style={{ marginTop: 0 }}
-              >
-                <option value="normal">Normal</option>
-                <option value="pastel">Pastel</option>
-                <option value="vibrante">Vibrante</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </SettingsPanel>
-
-      {/* SELECTOR DE VISTA (TABS) */}
-      <div style={{ 
-        display: 'flex', 
-        background: 'var(--input-bg)', 
-        padding: '6px', 
-        borderRadius: '14px', 
-        marginBottom: '25px', 
-        gap: '6px' 
-      }}>
-        <button 
-          onClick={() => setView('monthly')} 
-          className="btn-minimal" 
-          style={{ 
-            flex: 1, 
-            background: view === 'monthly' ? 'var(--bg-card)' : 'transparent', 
-            color: 'var(--text-main)', 
-            boxShadow: view === 'monthly' ? 'var(--shadow-card)' : 'none',
-            fontSize: '14px'
-          }}
-        >
-          Vista Mensual
-        </button>
-        <button 
-          onClick={() => setView('yearly')} 
-          className="btn-minimal" 
-          style={{ 
-            flex: 1, 
-            background: view === 'yearly' ? 'var(--bg-card)' : 'transparent', 
-            color: 'var(--text-main)', 
-            boxShadow: view === 'yearly' ? 'var(--shadow-card)' : 'none',
-            fontSize: '14px'
-          }}
-        >
-          Vista Anual
-        </button>
+      <div className="dashboard-view-tabs">
+        <button onClick={() => setView('monthly')} className={view === 'monthly' ? 'active' : ''}>Mes</button>
+        <button onClick={() => setView('yearly')} className={view === 'yearly' ? 'active' : ''}>Año</button>
       </div>
 
       {view === 'monthly' ? (
-        <>
+        <main className="dashboard-main">
           {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
-          {/* FILTROS Y ACCIONES RÁPIDAS */}
-          <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div className="card" style={{ padding: '16px 24px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>Filtrar por:</span>
-              
-              <select className="input-minimal" style={{ flex: '1 1 120px', marginTop: '0' }} value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
+
+          <section className="dashboard-toolbar">
+            <div className="period-selector">
+              <select className="input-minimal" value={selectedMonth} onChange={event => setSelectedMonth(Number(event.target.value))} aria-label="Mes">
                 {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
-
-              <div style={{ 
-                display: 'flex', alignItems: 'center',
-                background: 'var(--input-bg)', borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                flex: '0 1 140px', justifyContent: 'space-between'
-              }}>
-                <button type="button"
-                  onClick={() => setSelectedYear(y => y - 1)}
-                  style={{ background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--text-main)' }}
-                >◀</button>
+              <div className="year-stepper">
+                <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior">‹</button>
                 <span style={{ fontWeight: '700' }}>{selectedYear}</span>
-                <button type="button"
-                  onClick={() => setSelectedYear(y => y + 1)}
-                  style={{ background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--text-main)' }}
-                >▶</button>
+                <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente">›</button>
               </div>
+              <button className="btn-outline current-month-button" onClick={goToCurrentMonth}>Hoy</button>
             </div>
 
-            <button onClick={applyRecurring} className="btn-minimal" style={{ backgroundColor: 'var(--color-income)', color: 'white' }}>
-              ⚡ Aplicar fijos
-            </button>
-          </div>
+            <div className="quick-actions">
+              <button className="quick-action expense" onClick={() => setNewTransactionType('expense')}>
+                <span>−</span> Añadir gasto
+              </button>
+              <button className="quick-action income" onClick={() => setNewTransactionType('income')}>
+                <span>+</span> Añadir ingreso
+              </button>
+              <button className="quick-action recurring" onClick={applyRecurring}>
+                <span>↻</span> Aplicar recurrentes
+              </button>
+            </div>
+          </section>
 
-          <MonthlySummary transactions={transactions} />
-
-          <BudgetManager
-            user={session.user}
+          <MonthlySummary
             transactions={transactions}
-            customCategories={customCategories}
+            previousTransactions={previousTransactions}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
           />
 
-          <div className="card">
-            <ExpenseForm 
-              user={session.user} 
-              onTransactionAdded={fetchTransactions} 
-              customCategories={customCategories} 
-            />
-            <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-            <Suspense fallback={<p className="loading-state">Cargando gráfico...</p>}>
-              <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
-            </Suspense>
-            <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
+          <div className="dashboard-content-grid">
+            <CollapsibleSection
+              title="Presupuestos"
+              description="Límites y consumo por categoría"
+              storageKey="dashboardBudgetsOpen"
+            >
+              <BudgetManager
+                user={session.user}
+                transactions={transactions}
+                customCategories={customCategories}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Análisis"
+              description="Distribución de ingresos y gastos"
+              storageKey="dashboardChartOpen"
+            >
+              <Suspense fallback={<p className="loading-state">Cargando gráfico...</p>}>
+                <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
+              </Suspense>
+            </CollapsibleSection>
+          </div>
+
+          <CollapsibleSection
+            title="Actividad"
+            description="Movimientos recientes del periodo"
+            storageKey="dashboardHistoryOpen"
+          >
             <TransactionList
               transactions={transactions}
               user={session.user}
               customCategories={customCategories}
               onTransactionDeleted={fetchTransactions}
             />
-          </div>
-        </>
+          </CollapsibleSection>
+        </main>
       ) : (
-        <Suspense fallback={<p className="loading-state">Cargando vista anual...</p>}>
-          <YearlyView chartType={chartTypeYearly} palette={chartPalette} />
-        </Suspense>
+        <main className="dashboard-main">
+          <Suspense fallback={<p className="loading-state">Cargando vista anual...</p>}>
+            <YearlyView chartType={chartTypeYearly} palette={chartPalette} />
+          </Suspense>
+        </main>
       )}
     </div>
   )

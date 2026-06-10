@@ -8,10 +8,16 @@ import { toDatabaseDate } from './dateUtils'
 
 registerLocale('es', es)
 
-export default function ExpenseForm({ user, onTransactionAdded, customCategories }) {
+export default function ExpenseForm({
+  user,
+  onTransactionAdded,
+  customCategories,
+  initialType = 'expense',
+  onCancel
+}) {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
-  const [type, setType] = useState('expense')
+  const [type, setType] = useState(initialType)
   const [startDate, setStartDate] = useState(new Date()) 
   const [category, setCategory] = useState('Varios')
   const [loading, setLoading] = useState(false)
@@ -86,9 +92,8 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
   }
 
   return (
-    <div>
-      <h3 style={{ marginBottom: '20px' }}>Añadir nuevo movimiento</h3>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="transaction-form">
+      <form onSubmit={handleSubmit}>
         
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label style={{ flex: '1 1 120px', color: 'var(--text-muted)', fontSize: '14px' }}>
@@ -147,9 +152,12 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
           </label>
         </div>
 
-        <button type="submit" disabled={loading} className="btn-minimal">
-          {loading ? 'Guardando...' : 'Guardar movimiento'}
-        </button>
+        <div className="modal-actions">
+          {onCancel && <button type="button" className="btn-outline" onClick={onCancel}>Cancelar</button>}
+          <button type="submit" disabled={loading} className="btn-minimal">
+            {loading ? 'Guardando...' : 'Guardar movimiento'}
+          </button>
+        </div>
         {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
       </form>
     </div>

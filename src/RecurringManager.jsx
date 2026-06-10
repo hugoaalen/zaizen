@@ -21,7 +21,11 @@ export default function RecurringManager({ user, customCategories }) {
   ]
 
   const fetchSubs = async () => {
-    const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
     if (error) setErrorMessage('No se pudieron cargar los movimientos fijos.')
     else setSubs(data)
   }
@@ -29,14 +33,18 @@ export default function RecurringManager({ user, customCategories }) {
   useEffect(() => {
     let active = true
     const loadSubscriptions = async () => {
-      const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
       if (!active) return
       if (error) setErrorMessage('No se pudieron cargar los movimientos fijos.')
       else setSubs(data)
     }
     loadSubscriptions()
     return () => { active = false }
-  }, [])
+  }, [user.id])
 
   const getAvailableCategories = () => {
     // 1. Filtramos las personalizadas del usuario por tipo
@@ -70,7 +78,11 @@ export default function RecurringManager({ user, customCategories }) {
   }
 
   const deleteSub = async (id) => {
-    const { error } = await supabase.from('subscriptions').delete().eq('id', id)
+    const { error } = await supabase
+      .from('subscriptions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
     if (error) {
       setErrorMessage('No se pudo eliminar el movimiento fijo.')
       return
@@ -79,49 +91,64 @@ export default function RecurringManager({ user, customCategories }) {
   }
 
   return (
-    <div className="card" style={{ marginTop: '20px', borderStyle: 'dashed' }}>
-      <h4 style={{ marginBottom: '15px' }}>Tus Gastos/Ingresos Fijos</h4>
-      
-      <form onSubmit={addSub} style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <input className="input-minimal" style={{ flex: '2 1 180px' }} placeholder="Nombre (ej: Alquiler)" value={description} onChange={e => setDescription(e.target.value)} required />
-        <input className="input-minimal" style={{ width: '90px' }} type="number" step="0.01" placeholder="€" value={amount} onChange={e => setAmount(e.target.value)} required />
-        
-        <select className="input-minimal" style={{ width: '110px' }} value={type} onChange={e => { setType(e.target.value); setCategory('Varios'); }}>
-          <option value="expense">Gasto</option>
-          <option value="income">Ingreso</option>
-        </select>
+    <section className="settings-section">
+      <div className="settings-section-heading">
+        <div>
+          <h3>Movimientos recurrentes</h3>
+          <p>Configura pagos e ingresos que se repiten.</p>
+        </div>
+        <span className="settings-count">{subs.length}</span>
+      </div>
 
-        <select className="input-minimal" style={{ width: '130px' }} value={category} onChange={e => setCategory(e.target.value)}>
-          {getAvailableCategories().map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        <select className="input-minimal" style={{ width: '120px' }} value={targetMonth} onChange={e => setTargetMonth(e.target.value)}>
-          <option value="all">Mensual</option>
-          {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
-
-        <button type="submit" className="btn-minimal" style={{ width: 'auto' }}>＋</button>
+      <form onSubmit={addSub} className="settings-form recurring-form">
+        <label className="wide-field">
+          Nombre
+          <input className="input-minimal" placeholder="Ej: Alquiler" value={description} onChange={e => setDescription(e.target.value)} required />
+        </label>
+        <label>
+          Importe
+          <input className="input-minimal" type="number" min="0.01" step="0.01" placeholder="0,00 €" value={amount} onChange={e => setAmount(e.target.value)} required />
+        </label>
+        <label>
+          Tipo
+          <select className="input-minimal" value={type} onChange={e => { setType(e.target.value); setCategory('Varios'); }}>
+            <option value="expense">Gasto</option>
+            <option value="income">Ingreso</option>
+          </select>
+        </label>
+        <label>
+          Categoría
+          <select className="input-minimal" value={category} onChange={e => setCategory(e.target.value)}>
+            {getAvailableCategories().map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+        <label>
+          Frecuencia
+          <select className="input-minimal" value={targetMonth} onChange={e => setTargetMonth(e.target.value)}>
+            <option value="all">Todos los meses</option>
+            {months.map(m => <option key={m.value} value={m.value}>Solo {m.label}</option>)}
+          </select>
+        </label>
+        <button type="submit" className="btn-minimal settings-add-button">Añadir recurrente</button>
       </form>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div className="recurring-list">
+        {subs.length === 0 && <p className="settings-empty">No hay movimientos recurrentes configurados.</p>}
         {subs.map(s => (
-          <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'var(--input-bg)', borderRadius: '8px', fontSize: '13px' }}>
+          <div key={s.id} className="recurring-row">
+            <span className={`category-type-dot ${s.type === 'income' ? 'income' : 'expense'}`} />
             <div>
-              <div style={{ fontWeight: '600' }}>{s.description}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                {s.category} • {s.month ? `Solo en ${months.find(m => m.value === s.month)?.label}` : 'Todos los meses'}
-              </div>
+              <strong>{s.description}</strong>
+              <small>{s.category} · {s.month ? `Solo ${months.find(m => m.value === s.month)?.label}` : 'Mensual'}</small>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontWeight: '700', color: s.type === 'income' ? 'var(--color-income)' : 'var(--color-expense)' }}>
-                {s.type === 'income' ? '+' : '-'}{s.amount}€
-              </span>
-              <button onClick={() => deleteSub(s.id)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>❌</button>
-            </div>
+            <span className={s.type === 'income' ? 'amount-income' : 'amount-expense'}>
+              {s.type === 'income' ? '+' : '-'}{Number(s.amount).toFixed(2)} €
+            </span>
+            <button className="icon-button" onClick={() => deleteSub(s.id)} aria-label={`Eliminar recurrente ${s.description}`}>×</button>
           </div>
         ))}
       </div>
       {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
-    </div>
+    </section>
   )
 }

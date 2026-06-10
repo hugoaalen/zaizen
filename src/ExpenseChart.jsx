@@ -1,4 +1,18 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, Label, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { useState } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Label,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts'
 
 const PALETTES = {
   normal: {
@@ -15,113 +29,78 @@ const PALETTES = {
   }
 }
 
-export default function ExpenseChart({ transactions, chartStyle = { type: 'circular', palette: 'normal' } }) {
-  const pal = PALETTES[chartStyle.palette] || PALETTES.normal
+const groupByCategory = (transactions, type) =>
+  transactions
+    .filter(transaction => transaction.type === type)
+    .reduce((groups, transaction) => {
+      const category = transaction.category || 'Varios'
+      const existing = groups.find(item => item.name === category)
+      if (existing) existing.value += Number(transaction.amount)
+      else groups.push({ name: category, value: Number(transaction.amount) })
+      return groups
+    }, [])
+    .sort((a, b) => b.value - a.value)
+
+export default function ExpenseChart({
+  transactions,
+  chartStyle = { type: 'circular', palette: 'normal' }
+}) {
+  const [flow, setFlow] = useState('expense')
+  const palette = PALETTES[chartStyle.palette] || PALETTES.normal
   const isBar = chartStyle.type === 'barras'
-
-  const dataIngresos = transactions
-    .filter(t => t.type === 'income')
-    .reduce((acc, t) => {
-      const n = t.category || 'Varios'
-      const e = acc.find(i => i.name === n)
-      if (e) e.value += Number(t.amount)
-      else acc.push({ name: n, value: Number(t.amount) })
-      return acc
-    }, [])
-
-  const dataGastos = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, t) => {
-      const n = t.category || 'Varios'
-      const e = acc.find(i => i.name === n)
-      if (e) e.value += Number(t.amount)
-      else acc.push({ name: n, value: Number(t.amount) })
-      return acc
-    }, [])
-
-  const totalI = dataIngresos.reduce((s, i) => s + i.value, 0)
-  const totalE = dataGastos.reduce((s, i) => s + i.value, 0)
+  const data = groupByCategory(transactions, flow)
+  const colors = flow === 'income' ? palette.income : palette.expense
+  const total = data.reduce((sum, item) => sum + item.value, 0)
 
   if (transactions.length === 0) {
-    return <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No hay datos este mes.</p>
+    return <p className="empty-state chart-empty">No hay datos este mes.</p>
   }
 
-  const neto = totalI - totalE
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-      <div style={{ textAlign: 'center' }}>
-        <h4 style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Balance Neto</h4>
-        <h2 style={{ fontSize: '32px', color: neto >= 0 ? 'var(--color-income)' : 'var(--color-expense)', margin: 0 }}>
-          {neto.toFixed(2)}€
-        </h2>
+    <div className="compact-chart">
+      <div className="compact-chart-header">
+        <div>
+          <h3>Distribución por categoría</h3>
+          <p>Descubre dónde se concentra tu dinero.</p>
+        </div>
+        <div className="flow-switch">
+          <button className={flow === 'expense' ? 'active' : ''} onClick={() => setFlow('expense')}>Gastos</button>
+          <button className={flow === 'income' ? 'active' : ''} onClick={() => setFlow('income')}>Ingresos</button>
+        </div>
       </div>
 
-      <div style={{ textAlign: 'center' }}>
-        <h4 style={{ fontSize: '16px', color: 'var(--text-main)', marginBottom: '10px' }}>¿De dónde viene tu dinero?</h4>
-        {isBar ? (
-          <div style={{ width: '100%', height: Math.max(200, dataIngresos.length * 50) }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dataIngresos} layout="vertical" margin={{ left: 80, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={v => `${v.toFixed(2)}€`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {dataIngresos.map((_, i) => <Cell key={i} fill={pal.income[i % pal.income.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div style={{ width: '100%', height: 280 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={dataIngresos} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
-                  {dataIngresos.map((_, i) => <Cell key={i} fill={pal.income[i % pal.income.length]} />)}
-                  <Label value={`${totalI.toFixed(2)}€`} position="center" fill="var(--text-main)" style={{ fontSize: '18px', fontWeight: 'bold' }} />
-                </Pie>
-                <Tooltip formatter={v => `${v.toFixed(2)}€`} />
-                <Legend verticalAlign="bottom" iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
-
-      <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)' }} />
-
-      <div style={{ textAlign: 'center' }}>
-        <h4 style={{ fontSize: '16px', color: 'var(--text-main)', marginBottom: '10px' }}>¿A dónde ha ido tu dinero?</h4>
-        {isBar ? (
-          <div style={{ width: '100%', height: Math.max(200, dataGastos.length * 50) }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dataGastos} layout="vertical" margin={{ left: 80, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={v => `${v.toFixed(2)}€`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {dataGastos.map((_, i) => <Cell key={i} fill={pal.expense[i % pal.expense.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={dataGastos} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
-                  {dataGastos.map((_, i) => <Cell key={i} fill={pal.expense[i % pal.expense.length]} />)}
-                  <Label value={`${totalE.toFixed(2)}€`} position="center" fill="var(--text-main)" style={{ fontSize: '18px', fontWeight: 'bold' }} />
-                </Pie>
-                <Tooltip formatter={v => `${v.toFixed(2)}€`} />
-                <Legend verticalAlign="bottom" iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
+      {data.length === 0 ? (
+        <p className="empty-state chart-empty">
+          No hay {flow === 'income' ? 'ingresos' : 'gastos'} este mes.
+        </p>
+      ) : isBar ? (
+        <div className="chart-canvas" style={{ height: Math.max(230, data.length * 46) }}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 300 }}>
+            <BarChart data={data} layout="vertical" margin={{ left: 70, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
+              <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="name" type="category" width={70} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={value => `${value.toFixed(2)} €`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
+              <Bar dataKey="value" radius={[0, 5, 5, 0]}>
+                {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="chart-canvas">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 300 }}>
+            <PieChart>
+              <Pie data={data} cx="50%" cy="44%" innerRadius={68} outerRadius={94} paddingAngle={4} dataKey="value" stroke="none">
+                {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
+                <Label value={`${total.toFixed(2)} €`} position="center" fill="var(--text-main)" style={{ fontSize: '18px', fontWeight: 'bold' }} />
+              </Pie>
+              <Tooltip formatter={value => `${value.toFixed(2)} €`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
+              <Legend verticalAlign="bottom" iconType="circle" />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }

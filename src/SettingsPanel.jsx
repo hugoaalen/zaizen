@@ -1,50 +1,60 @@
-export default function SettingsPanel({ open, onClose, children }) {
+import { useEffect, useState } from 'react'
+
+export default function SettingsPanel({ open, onClose, sections }) {
+  const [activeSection, setActiveSection] = useState(sections[0]?.id)
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose, open])
+
   if (!open) return null
 
+  const activeContent = sections.find(section => section.id === activeSection)?.content
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      display: 'flex', justifyContent: 'flex-end',
-    }}>
-      <div
-        onClick={onClose}
-        style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.4)',
-          animation: 'fadeIn 0.2s ease',
-        }}
-      />
-      <div style={{
-        position: 'relative',
-        width: '100%', maxWidth: '480px',
-        height: '100%',
-        background: 'var(--bg-body)',
-        animation: 'slideIn 0.3s ease',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 24px', borderBottom: '1px solid var(--border-color)',
-          background: 'var(--bg-card)', flexShrink: 0,
-        }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>Ajustes</h3>
-          <button
-            onClick={onClose}
-            className="btn-outline"
-            style={{ fontWeight: '700', fontSize: '14px' }}
-          >
-            ✕ Cerrar
-          </button>
+    <div className="settings-overlay">
+      <button className="settings-backdrop" onClick={onClose} aria-label="Cerrar ajustes" />
+      <aside className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <header className="settings-header">
+          <div>
+            <span className="settings-eyebrow">Preferencias</span>
+            <h2 id="settings-title">Ajustes</h2>
+            <p>Personaliza cómo registras y visualizas tus finanzas.</p>
+          </div>
+          <button onClick={onClose} className="settings-close" aria-label="Cerrar ajustes">×</button>
+        </header>
+
+        <nav className="settings-tabs" aria-label="Secciones de ajustes">
+          {sections.map(section => (
+            <button
+              key={section.id}
+              type="button"
+              className={activeSection === section.id ? 'active' : ''}
+              onClick={() => setActiveSection(section.id)}
+            >
+              <span>{section.icon}</span>
+              {section.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="settings-content">
+          {activeContent}
         </div>
-        <div style={{
-          flex: 1, overflow: 'auto',
-          padding: '20px 24px 40px',
-          display: 'flex', flexDirection: 'column', gap: '16px',
-        }}>
-          {children}
-        </div>
-      </div>
+      </aside>
     </div>
   )
 }
