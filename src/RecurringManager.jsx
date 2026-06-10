@@ -9,6 +9,7 @@ export default function RecurringManager({ user, customCategories }) {
   const [type, setType] = useState('expense')
   const [targetMonth, setTargetMonth] = useState('all')
   const [category, setCategory] = useState('Varios')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const months = [
     { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' },
@@ -20,13 +21,21 @@ export default function RecurringManager({ user, customCategories }) {
   ]
 
   const fetchSubs = async () => {
-    const { data } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
-    if (data) setSubs(data)
+    const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
+    if (error) setErrorMessage('No se pudieron cargar los movimientos fijos.')
+    else setSubs(data)
   }
 
-  // Ya solo cargamos las suscripciones, las categorías nos las da el Dashboard
-  useEffect(() => { 
-    fetchSubs()
+  useEffect(() => {
+    let active = true
+    const loadSubscriptions = async () => {
+      const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
+      if (!active) return
+      if (error) setErrorMessage('No se pudieron cargar los movimientos fijos.')
+      else setSubs(data)
+    }
+    loadSubscriptions()
+    return () => { active = false }
   }, [])
 
   const getAvailableCategories = () => {
@@ -44,7 +53,8 @@ export default function RecurringManager({ user, customCategories }) {
 
   const addSub = async (e) => {
     e.preventDefault()
-    await supabase.from('subscriptions').insert([{ 
+    setErrorMessage('')
+    const { error } = await supabase.from('subscriptions').insert([{
       user_id: user.id, 
       amount: parseFloat(amount), 
       description, 
@@ -52,11 +62,19 @@ export default function RecurringManager({ user, customCategories }) {
       category,
       month: targetMonth === 'all' ? null : parseInt(targetMonth) 
     }])
+    if (error) {
+      setErrorMessage('No se pudo guardar el movimiento fijo.')
+      return
+    }
     setAmount(''); setDescription(''); setCategory('Varios'); fetchSubs()
   }
 
   const deleteSub = async (id) => {
-    await supabase.from('subscriptions').delete().eq('id', id)
+    const { error } = await supabase.from('subscriptions').delete().eq('id', id)
+    if (error) {
+      setErrorMessage('No se pudo eliminar el movimiento fijo.')
+      return
+    }
     fetchSubs()
   }
 
@@ -103,6 +121,7 @@ export default function RecurringManager({ user, customCategories }) {
           </div>
         ))}
       </div>
+      {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
     </div>
   )
 }

@@ -30,6 +30,29 @@ El nombre **ZaiZen** nace de la fusión de dos conceptos japoneses que definen l
 * **Backend & Base de Datos:** [Supabase](https://supabase.com/) (Autenticación y PostgreSQL)
 * **Despliegue:** Vercel
 
+## Desarrollo local
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Antes de usar presupuestos y recurrentes idempotentes, aplica la migración de
+`supabase/migrations` desde Supabase CLI o el SQL Editor del proyecto:
+
+```bash
+supabase db push
+```
+
+Comprobaciones disponibles:
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
 ## 🤝 Contribución
 
 Si quieres mejorar **ZaiZen**, ¡las contribuciones son bienvenidas!

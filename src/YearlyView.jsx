@@ -4,8 +4,9 @@ import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
+import { getMonthIndex } from './dateUtils'
 
-export default function YearlyView({ session, chartType = 'barras', palette = 'normal' }) {
+export default function YearlyView({ chartType = 'barras', palette = 'normal' }) {
   const [yearData, setYearData] = useState([])
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [totals, setTotals] = useState({ income: 0, expense: 0 })
@@ -13,24 +14,25 @@ export default function YearlyView({ session, chartType = 'barras', palette = 'n
   const colorIncome = palette === 'pastel' ? '#4ade80' : palette === 'vibrante' ? '#00c853' : 'var(--color-income)'
   const colorExpense = palette === 'pastel' ? '#f87171' : palette === 'vibrante' ? '#ff1744' : 'var(--color-expense)'
 
-  const fetchYearlyData = async () => {
-    const firstDay = `${selectedYear}-01-01`
-    const lastDay = `${selectedYear}-12-31`
+  useEffect(() => {
+    let active = true
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .gte('date', firstDay)
-      .lte('date', lastDay)
+    const loadYearlyData = async () => {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('amount,type,date')
+        .gte('date', `${selectedYear}-01-01`)
+        .lte('date', `${selectedYear}-12-31`)
 
-    if (data) {
+      if (error || !active) return
+
       const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-      const chartData = months.map(m => ({ name: m, ingresos: 0, gastos: 0 }))
-      
-      let totalI = 0, totalE = 0
+      const chartData = months.map(name => ({ name, ingresos: 0, gastos: 0 }))
+      let totalI = 0
+      let totalE = 0
 
       data.forEach(t => {
-        const monthIndex = new Date(t.date).getMonth()
+        const monthIndex = getMonthIndex(t.date)
         const amount = Number(t.amount)
         if (t.type === 'income') {
           chartData[monthIndex].ingresos += amount
@@ -44,9 +46,10 @@ export default function YearlyView({ session, chartType = 'barras', palette = 'n
       setYearData(chartData)
       setTotals({ income: totalI, expense: totalE })
     }
-  }
 
-  useEffect(() => { fetchYearlyData() }, [selectedYear])
+    loadYearlyData()
+    return () => { active = false }
+  }, [selectedYear])
 
   const activeExpenseMonths = yearData.filter(m => m.gastos > 0).length || 1
   const averageMonthlyExpense = totals.expense / activeExpenseMonths

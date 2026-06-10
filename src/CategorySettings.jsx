@@ -5,20 +5,36 @@ export default function CategorySettings({ user, onCategoryChanged }) {
   const [newCat, setNewCat] = useState('')
   const [type, setType] = useState('expense')
   const [categories, setCategories] = useState([])
+  const [errorMessage, setErrorMessage] = useState('')
 
   const fetchCategories = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('custom_categories')
       .select('*')
       .order('name')
-    if (data) setCategories(data)
+    if (error) setErrorMessage('No se pudieron cargar las categorías.')
+    else setCategories(data)
   }
 
-  useEffect(() => { fetchCategories() }, [])
+  useEffect(() => {
+    let active = true
+    const loadCategories = async () => {
+      const { data, error } = await supabase
+        .from('custom_categories')
+        .select('*')
+        .order('name')
+      if (!active) return
+      if (error) setErrorMessage('No se pudieron cargar las categorías.')
+      else setCategories(data)
+    }
+    loadCategories()
+    return () => { active = false }
+  }, [])
 
   const addCategory = async (e) => {
     e.preventDefault()
     if (!newCat) return
+    setErrorMessage('')
     
     const { error } = await supabase.from('custom_categories').insert([
       { user_id: user.id, name: newCat, type: type }
@@ -26,7 +42,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
     
     if (error) {
       console.error("Error detallado:", error)
-      alert("Error al guardar: " + error.message)
+      setErrorMessage(`No se pudo guardar: ${error.message}`)
     } else {
       setNewCat('')
       fetchCategories()
@@ -36,7 +52,11 @@ export default function CategorySettings({ user, onCategoryChanged }) {
   }
 
   const deleteCategory = async (id) => {
-    await supabase.from('custom_categories').delete().eq('id', id)
+    const { error } = await supabase.from('custom_categories').delete().eq('id', id)
+    if (error) {
+      setErrorMessage('No se pudo eliminar la categoría.')
+      return
+    }
     fetchCategories()
     // NUEVO: Avisamos al Dashboard de que hemos borrado una
     if (onCategoryChanged) onCategoryChanged() 
@@ -102,6 +122,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
           )
         })}
       </div>
+      {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
     </div>
   )
 }

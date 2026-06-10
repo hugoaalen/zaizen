@@ -1,18 +1,21 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import ExpenseForm from './ExpenseForm'
-import ExpenseChart from './ExpenseChart'
 import TransactionList from './TransactionList'
 import RecurringManager from './RecurringManager'
-import YearlyView from './YearlyView'
 import CategorySettings from './CategorySettings'
 import MonthlySummary from './MonthlySummary'
 import SettingsPanel from './SettingsPanel'
+import BudgetManager from './BudgetManager'
+
+const ExpenseChart = lazy(() => import('./ExpenseChart'))
+const YearlyView = lazy(() => import('./YearlyView'))
 
 export default function Dashboard({ session, theme, setTheme }) {
   const [view, setView] = useState('monthly')
   const [transactions, setTransactions] = useState([])
   const [customCategories, setCustomCategories] = useState([])
+  const [errorMessage, setErrorMessage] = useState('')
 
   const [chartTypeMonthly, setChartTypeMonthly] = useState(() => localStorage.getItem('chartTypeMonthly') || 'circular')
   const [chartTypeYearly, setChartTypeYearly] = useState(() => localStorage.getItem('chartTypeYearly') || 'barras')
@@ -37,11 +40,6 @@ export default function Dashboard({ session, theme, setTheme }) {
     { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
   ]
 
-  const fetchCustomCategories = async () => {
-    const { data } = await supabase.from('custom_categories').select('*').eq('user_id', session.user.id).order('name')
-    if (data) setCustomCategories(data)
-  }
-
   const fetchTransactions = async () => {
     const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
     const lastDayOfMonth = new Date(selectedYear, selectedMonth, 0).getDate()
@@ -50,18 +48,67 @@ export default function Dashboard({ session, theme, setTheme }) {
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
+      .eq('user_id', session.user.id)
       .gte('date', firstDay)
       .lte('date', lastDay)
       .order('date', { ascending: false })
 
-    if (error) console.error('Error:', error)
-    else setTransactions(data)
+    if (error) setErrorMessage('No se pudieron cargar los movimientos.')
+    else {
+      setErrorMessage('')
+      setTransactions(data)
+    }
   }
 
-  useEffect(() => { fetchCustomCategories() }, [])
   useEffect(() => {
-    if (view === 'monthly') fetchTransactions()
-  }, [selectedMonth, selectedYear, view])
+    let active = true
+    const loadCategories = async () => {
+      const { data, error } = await supabase
+        .from('custom_categories')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('name')
+      if (!active) return
+      if (error) setErrorMessage('No se pudieron cargar las categorías.')
+      else setCustomCategories(data)
+    }
+    loadCategories()
+    return () => { active = false }
+  }, [session.user.id])
+
+  useEffect(() => {
+    if (view !== 'monthly') return
+    let active = true
+    const loadTransactions = async () => {
+      const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
+      const lastDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${new Date(selectedYear, selectedMonth, 0).getDate()}`
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .gte('date', firstDay)
+        .lte('date', lastDay)
+        .order('date', { ascending: false })
+      if (!active) return
+      if (error) setErrorMessage('No se pudieron cargar los movimientos.')
+      else {
+        setErrorMessage('')
+        setTransactions(data)
+      }
+    }
+    loadTransactions()
+    return () => { active = false }
+  }, [selectedMonth, selectedYear, session.user.id, view])
+
+  const fetchCustomCategories = async () => {
+    const { data, error } = await supabase
+      .from('custom_categories')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('name')
+    if (error) setErrorMessage('No se pudieron cargar las categorías.')
+    else setCustomCategories(data)
+  }
 
   const handleLogout = async () => await supabase.auth.signOut()
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
@@ -70,6 +117,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     const { data: subs } = await supabase
       .from('subscriptions')
       .select('*')
+      .eq('user_id', session.user.id)
       .or(`month.is.null,month.eq.${selectedMonth}`);
 
     if (!subs || subs.length === 0) {
@@ -77,29 +125,40 @@ export default function Dashboard({ session, theme, setTheme }) {
       return;
     }
 
-    const subsToInsert = subs.filter(sub => {
-      const fixedDescription = `[Fijo] ${sub.description}`;
-      return !transactions.some(t => t.description === fixedDescription);
-    });
+    const recurringPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
+    const subsToInsert = subs.filter(sub =>
+      !transactions.some(t =>
+        String(t.recurring_source_id) === String(sub.id) &&
+        t.recurring_period === recurringPeriod
+      )
+    )
 
     if (subsToInsert.length === 0) {
       alert("Ya has aplicado los movimientos fijos de este mes.");
       return;
     }
 
-    const fechaToInsert = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
     const finalData = subsToInsert.map(s => ({
       user_id: session.user.id,
       amount: s.amount,
       description: `[Fijo] ${s.description}`,
       type: s.type,
-      date: fechaToInsert,
-      category: s.category || 'Varios'
+      date: recurringPeriod,
+      category: s.category || 'Varios',
+      recurring_source_id: String(s.id),
+      recurring_period: recurringPeriod
     }));
 
-    const { error } = await supabase.from('transactions').insert(finalData);
+    const { error } = await supabase
+      .from('transactions')
+      .upsert(finalData, {
+        onConflict: 'user_id,recurring_source_id,recurring_period',
+        ignoreDuplicates: true
+      })
     
-    if (!error) {
+    if (error) {
+      setErrorMessage('No se pudieron aplicar los movimientos fijos.')
+    } else {
       alert(`Se han añadido ${subsToInsert.length} movimientos.`);
       fetchTransactions();
     }
@@ -219,6 +278,7 @@ export default function Dashboard({ session, theme, setTheme }) {
 
       {view === 'monthly' ? (
         <>
+          {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
           {/* FILTROS Y ACCIONES RÁPIDAS */}
           <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div className="card" style={{ padding: '16px 24px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -253,6 +313,14 @@ export default function Dashboard({ session, theme, setTheme }) {
 
           <MonthlySummary transactions={transactions} />
 
+          <BudgetManager
+            user={session.user}
+            transactions={transactions}
+            customCategories={customCategories}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
+
           <div className="card">
             <ExpenseForm 
               user={session.user} 
@@ -260,13 +328,22 @@ export default function Dashboard({ session, theme, setTheme }) {
               customCategories={customCategories} 
             />
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-            <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
+            <Suspense fallback={<p className="loading-state">Cargando gráfico...</p>}>
+              <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
+            </Suspense>
             <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-            <TransactionList transactions={transactions} onTransactionDeleted={fetchTransactions} />
+            <TransactionList
+              transactions={transactions}
+              user={session.user}
+              customCategories={customCategories}
+              onTransactionDeleted={fetchTransactions}
+            />
           </div>
         </>
       ) : (
-        <YearlyView session={session} chartType={chartTypeYearly} palette={chartPalette} />
+        <Suspense fallback={<p className="loading-state">Cargando vista anual...</p>}>
+          <YearlyView chartType={chartTypeYearly} palette={chartPalette} />
+        </Suspense>
       )}
     </div>
   )

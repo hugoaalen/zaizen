@@ -4,6 +4,7 @@ import { CATEGORY_MAP, BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from '.
 import DatePicker, { registerLocale } from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { es } from 'date-fns/locale/es'
+import { toDatabaseDate } from './dateUtils'
 
 registerLocale('es', es)
 
@@ -14,6 +15,7 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
   const [startDate, setStartDate] = useState(new Date()) 
   const [category, setCategory] = useState('Varios')
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   
   const getAvailableCategories = () => {
     // 1. Filtramos las personalizadas del usuario por tipo (gasto/ingreso)
@@ -61,6 +63,7 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMessage('')
 
     const { error } = await supabase
       .from('transactions')
@@ -70,10 +73,12 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
         description: description,
         type: type,
         category: category,
-        date: startDate.toISOString().split('T')[0]
+        date: toDatabaseDate(startDate)
       }])
 
-    if (!error) {
+    if (error) {
+      setErrorMessage('No se pudo guardar el movimiento. Inténtalo de nuevo.')
+    } else {
       setAmount(''); setDescription(''); setCategory('Varios')
       if (onTransactionAdded) onTransactionAdded()
     }
@@ -145,6 +150,7 @@ export default function ExpenseForm({ user, onTransactionAdded, customCategories
         <button type="submit" disabled={loading} className="btn-minimal">
           {loading ? 'Guardando...' : 'Guardar movimiento'}
         </button>
+        {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
       </form>
     </div>
   )
