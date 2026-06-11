@@ -379,7 +379,7 @@ body {
 
 .settings-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 0 30px 18px;
   border-bottom: 1px solid var(--border-color);
@@ -660,6 +660,195 @@ body {
   border-radius: 50%;
 }
 
+/* Bank CSV import */
+.bank-file-drop {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin: 22px;
+  padding: 34px 20px;
+  border: 1px dashed color-mix(in srgb, var(--btn-bg) 45%, var(--border-color));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--btn-bg) 5%, var(--input-bg));
+  cursor: pointer;
+  text-align: center;
+}
+
+.bank-file-drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.bank-file-drop > span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.bank-file-drop strong {
+  font-size: 14px;
+}
+
+.bank-file-drop small {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.import-reset {
+  flex: 0 0 auto;
+}
+
+.import-file-summary {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.import-file-summary > div {
+  min-width: 0;
+  padding: 16px 20px;
+  border-right: 1px solid var(--border-color);
+}
+
+.import-file-summary > div:last-child {
+  border-right: 0;
+}
+
+.import-file-summary span,
+.import-file-summary strong {
+  display: block;
+}
+
+.import-file-summary span {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.import-file-summary strong {
+  overflow: hidden;
+  margin-top: 5px;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-mapping {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.import-mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.import-mapping-grid label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.import-mapping-grid .input-minimal {
+  margin-top: 7px;
+}
+
+.import-preview-button {
+  width: calc(100% - 44px);
+  margin: 0 22px 22px;
+}
+
+.import-preview > .settings-section-heading .btn-minimal {
+  width: auto;
+  white-space: nowrap;
+}
+
+.import-preview-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.import-preview-row {
+  display: grid;
+  grid-template-columns: 20px minmax(150px, 1fr) 90px 120px auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.import-preview-row:last-child {
+  border-bottom: 0;
+}
+
+.import-preview-row.invalid {
+  opacity: 0.6;
+}
+
+.import-preview-copy {
+  min-width: 0;
+}
+
+.import-preview-copy strong,
+.import-preview-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-preview-copy .import-date {
+  width: 122px;
+  margin: 5px 0 0;
+  padding: 4px 6px;
+  font-size: 10px;
+}
+
+.import-preview-copy strong {
+  font-size: 12px;
+}
+
+.import-preview-copy small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.import-preview-row .input-minimal {
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  font-size: 10px;
+}
+
+.import-preview-row > .amount-income,
+.import-preview-row > .amount-expense {
+  font-size: 11px;
+  text-align: right;
+}
+
+.import-status {
+  margin: 0;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.import-status.success {
+  color: var(--color-income);
+  font-size: 12px;
+}
+
 .insights-card {
   margin-bottom: 20px;
 }
@@ -761,6 +950,11 @@ body {
     font-size: 11px;
   }
 
+  .settings-tabs {
+    grid-template-columns: repeat(4, minmax(70px, 1fr));
+    overflow-x: auto;
+  }
+
   .settings-content {
     padding: 20px 16px 34px;
   }
@@ -791,6 +985,35 @@ body {
   .recurring-row > .icon-button {
     grid-column: 3;
     grid-row: 1 / span 2;
+  }
+
+  .import-file-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .import-file-summary > div:first-child {
+    grid-column: 1 / -1;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .import-mapping-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .import-preview-row {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+  }
+
+  .import-preview-row .import-type,
+  .import-preview-row .import-category {
+    grid-column: 2 / -1;
+  }
+
+  .import-preview-row > .amount-income,
+  .import-preview-row > .amount-expense {
+    grid-column: 3;
+    grid-row: 1;
   }
 }
 

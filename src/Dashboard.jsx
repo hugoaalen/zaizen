@@ -8,6 +8,7 @@ import SettingsPanel from './SettingsPanel'
 import BudgetManager from './BudgetManager'
 import TransactionModal from './TransactionModal'
 import CollapsibleSection from './CollapsibleSection'
+import BankCsvImporter from './BankCsvImporter'
 import { LogoutIcon, MoonIcon, SettingsIcon, SunIcon } from './TopbarIcons'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
@@ -168,6 +169,18 @@ export default function Dashboard({ session, theme, setTheme }) {
         <RecurringManager
           user={session.user}
           customCategories={customCategories}
+        />
+      )
+    },
+    {
+      id: 'import',
+      label: 'Importar',
+      icon: '⇩',
+      content: (
+        <BankCsvImporter
+          user={session.user}
+          customCategories={customCategories}
+          onImported={fetchTransactions}
         />
       )
     },
