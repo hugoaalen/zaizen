@@ -85,9 +85,11 @@ export default function MonthlySummary({
             ? `${biggestSaving.category} baja ${formatMoney(Math.abs(biggestSaving.difference))}`
             : 'Sin ahorros destacables'}
         </p>
-        <p>
+        <p title={isFuture ? undefined : 'Estimación basada en el gasto medio diario del mes hasta hoy.'}>
           <span className="insight-dot projection" />
-          {isFuture ? 'Sin proyección para meses futuros' : `Proyección: ${formatMoney(projectedExpense)}`}
+          {isFuture
+            ? 'Sin proyección para meses futuros'
+            : `Proyección mensual de gasto: ${formatMoney(projectedExpense)}`}
         </p>
       </div>
     </section>

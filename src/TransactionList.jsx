@@ -9,6 +9,35 @@ const normalizeSearchText = (value) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('es')
 
+const formatMoney = value => new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR'
+}).format(value)
+
+function ActionIcon({ type }) {
+  const props = {
+    width: 16,
+    height: 16,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true
+  }
+
+  if (type === 'edit') {
+    return <svg {...props}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg>
+  }
+
+  if (type === 'duplicate') {
+    return <svg {...props}><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+  }
+
+  return <svg {...props}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5" /></svg>
+}
+
 export default function TransactionList({ transactions, user, customCategories, onTransactionDeleted }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -40,6 +69,13 @@ export default function TransactionList({ transactions, user, customCategories, 
     : []
 
   const visibleTransactions = expanded ? filteredTransactions : filteredTransactions.slice(0, 5)
+  const activityTotals = useMemo(
+    () => transactions.reduce((totals, transaction) => {
+      totals[transaction.type] += Number(transaction.amount)
+      return totals
+    }, { income: 0, expense: 0 }),
+    [transactions]
+  )
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que quieres borrar este movimiento?')) return
@@ -92,35 +128,44 @@ export default function TransactionList({ transactions, user, customCategories, 
   }
 
   if (transactions.length === 0) {
-    return <p className="empty-state history-empty">No hay movimientos este mes.</p>
+    return (
+      <div className="history-empty">
+        <span>Sin actividad</span>
+        <strong>No hay movimientos este mes</strong>
+        <p>Añade un ingreso o un gasto para empezar a construir tu historial.</p>
+      </div>
+    )
   }
 
   return (
     <div className="compact-history">
       <div className="compact-history-heading">
         <div>
-          <h3>Últimos movimientos</h3>
-          <p>{transactions.length} movimientos este mes</p>
+          <span className="section-kicker">Movimientos</span>
+          <h3>Actividad reciente</h3>
+          <p>{transactions.length} {transactions.length === 1 ? 'movimiento registrado' : 'movimientos registrados'} este mes</p>
         </div>
-        {transactions.length > 5 && (
-          <button className="btn-outline" onClick={() => setExpanded(value => !value)}>
-            {expanded ? 'Mostrar menos' : 'Ver todos'}
-          </button>
-        )}
+        <div className="activity-summary">
+          <span><i className="income" />Ingresos <strong>{formatMoney(activityTotals.income)}</strong></span>
+          <span><i className="expense" />Gastos <strong>{formatMoney(activityTotals.expense)}</strong></span>
+        </div>
       </div>
 
       {expanded && (
-        <div className="transaction-filters">
-          <input className="input-minimal" type="search" placeholder="Buscar movimiento..." value={search} onChange={event => setSearch(event.target.value)} />
-          <select className="input-minimal" value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
-            <option value="all">Todos los tipos</option>
-            <option value="expense">Gastos</option>
-            <option value="income">Ingresos</option>
-          </select>
-          <select className="input-minimal" value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)}>
-            <option value="all">Todas las categorías</option>
-            {categories.map(category => <option key={category} value={category}>{category}</option>)}
-          </select>
+        <div className="activity-filter-panel">
+          <div className="transaction-filters">
+            <input className="input-minimal" type="search" placeholder="Buscar por descripción..." value={search} onChange={event => setSearch(event.target.value)} />
+            <select className="input-minimal" value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filtrar por tipo">
+              <option value="all">Todos los tipos</option>
+              <option value="expense">Solo gastos</option>
+              <option value="income">Solo ingresos</option>
+            </select>
+            <select className="input-minimal" value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filtrar por categoría">
+              <option value="all">Todas las categorías</option>
+              {categories.map(category => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </div>
+          <small>{filteredTransactions.length} resultados</small>
         </div>
       )}
 
@@ -129,19 +174,24 @@ export default function TransactionList({ transactions, user, customCategories, 
       <div className="compact-history-list">
         {visibleTransactions.map(transaction => (
           <article className="compact-transaction" key={transaction.id}>
-            <span className={`transaction-mark ${transaction.type}`} />
+            <span className={`transaction-symbol ${transaction.type}`} aria-hidden="true">
+              {transaction.type === 'income' ? '↙' : '↗'}
+            </span>
             <div className="transaction-copy">
               <strong>{transaction.description}</strong>
-              <small>{formatTransactionDate(transaction.date)} · {transaction.category || 'Varios'}</small>
+              <div>
+                <span>{transaction.category || 'Varios'}</span>
+                <small>{formatTransactionDate(transaction.date)}</small>
+              </div>
             </div>
             <div className="transaction-side">
               <span className={transaction.type === 'income' ? 'amount-income' : 'amount-expense'}>
-                {transaction.type === 'income' ? '+' : '-'}{Number(transaction.amount).toFixed(2)} €
+                {transaction.type === 'income' ? '+' : '-'}{formatMoney(transaction.amount)}
               </span>
               <div className="transaction-actions">
-                <button onClick={() => setEditing({ ...transaction })} className="icon-button" title="Editar" aria-label={`Editar ${transaction.description}`}>✎</button>
-                <button onClick={() => handleDuplicate(transaction)} className="icon-button" title="Duplicar" aria-label={`Duplicar ${transaction.description}`}>⧉</button>
-                <button onClick={() => handleDelete(transaction.id)} className="icon-button" title="Borrar" aria-label={`Borrar ${transaction.description}`}>×</button>
+                <button onClick={() => setEditing({ ...transaction })} className="icon-button" title="Editar" aria-label={`Editar ${transaction.description}`}><ActionIcon type="edit" /></button>
+                <button onClick={() => handleDuplicate(transaction)} className="icon-button" title="Duplicar" aria-label={`Duplicar ${transaction.description}`}><ActionIcon type="duplicate" /></button>
+                <button onClick={() => handleDelete(transaction.id)} className="icon-button delete" title="Borrar" aria-label={`Borrar ${transaction.description}`}><ActionIcon type="delete" /></button>
               </div>
             </div>
           </article>
@@ -151,6 +201,13 @@ export default function TransactionList({ transactions, user, customCategories, 
           <p className="empty-state">Ningún movimiento coincide con los filtros.</p>
         )}
       </div>
+
+      {transactions.length > 5 && (
+        <button className="activity-expand-button" onClick={() => setExpanded(value => !value)}>
+          {expanded ? 'Mostrar menos movimientos' : `Ver todos los movimientos (${transactions.length})`}
+          <span aria-hidden="true">{expanded ? '↑' : '↓'}</span>
+        </button>
+      )}
 
       {editing && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setEditing(null)}>

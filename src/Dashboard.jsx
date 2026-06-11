@@ -8,6 +8,7 @@ import SettingsPanel from './SettingsPanel'
 import BudgetManager from './BudgetManager'
 import TransactionModal from './TransactionModal'
 import CollapsibleSection from './CollapsibleSection'
+import { LogoutIcon, MoonIcon, SettingsIcon, SunIcon } from './TopbarIcons'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -289,11 +290,15 @@ export default function Dashboard({ session, theme, setTheme }) {
           </div>
         </div>
         <div className="dashboard-topbar-actions">
-          <button onClick={toggleTheme} className="topbar-icon" aria-label="Cambiar tema">
-            {theme === 'light' ? '◐' : '◑'}
+          <button onClick={toggleTheme} className="topbar-icon" aria-label="Cambiar tema" title="Cambiar tema">
+            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
-          <button onClick={() => setShowSettings(true)} className="topbar-icon" aria-label="Abrir ajustes">⚙</button>
-          <button onClick={handleLogout} className="btn-outline dashboard-logout">Salir</button>
+          <button onClick={() => setShowSettings(true)} className="topbar-icon" aria-label="Abrir ajustes" title="Ajustes">
+            <SettingsIcon />
+          </button>
+          <button onClick={handleLogout} className="topbar-icon dashboard-logout" aria-label="Cerrar sesión" title="Cerrar sesión">
+            <LogoutIcon />
+          </button>
         </div>
       </header>
 
@@ -391,7 +396,7 @@ export default function Dashboard({ session, theme, setTheme }) {
       ) : (
         <main className="dashboard-main">
           <Suspense fallback={<p className="loading-state">Cargando vista anual...</p>}>
-            <YearlyView chartType={chartTypeYearly} palette={chartPalette} />
+            <YearlyView user={session.user} chartType={chartTypeYearly} palette={chartPalette} />
           </Suspense>
         </main>
       )}

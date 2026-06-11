@@ -41,6 +41,35 @@ const groupByCategory = (transactions, type) =>
     }, [])
     .sort((a, b) => b.value - a.value)
 
+const formatMoney = value => `${Number(value).toFixed(2)} €`
+
+function CategoryTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+
+  const item = payload[0]
+  return (
+    <div className="chart-tooltip">
+      <span>{label || item.payload?.name}</span>
+      <strong style={{ color: item.color || item.fill }}>{formatMoney(item.value)}</strong>
+    </div>
+  )
+}
+
+function DonutCenterLabel({ viewBox, value }) {
+  if (viewBox?.cx == null || viewBox?.cy == null) return null
+
+  return (
+    <g>
+      <text className="donut-total" x={viewBox.cx} y={viewBox.cy - 3} textAnchor="middle">
+        {formatMoney(value)}
+      </text>
+      <text className="donut-caption" x={viewBox.cx} y={viewBox.cy + 17} textAnchor="middle">
+        Total
+      </text>
+    </g>
+  )
+}
+
 export default function ExpenseChart({
   transactions,
   chartStyle = { type: 'circular', palette: 'normal' }
@@ -80,7 +109,7 @@ export default function ExpenseChart({
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
               <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis dataKey="name" type="category" width={70} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={value => `${value.toFixed(2)} €`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
+              <Tooltip content={<CategoryTooltip />} cursor={{ fill: 'var(--input-bg)' }} />
               <Bar dataKey="value" radius={[0, 5, 5, 0]}>
                 {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
               </Bar>
@@ -93,9 +122,9 @@ export default function ExpenseChart({
             <PieChart>
               <Pie data={data} cx="50%" cy="44%" innerRadius={68} outerRadius={94} paddingAngle={4} dataKey="value" stroke="none">
                 {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
-                <Label value={`${total.toFixed(2)} €`} position="center" fill="var(--text-main)" style={{ fontSize: '18px', fontWeight: 'bold' }} />
+                <Label content={<DonutCenterLabel value={total} />} position="center" />
               </Pie>
-              <Tooltip formatter={value => `${value.toFixed(2)} €`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
+              <Tooltip content={<CategoryTooltip />} />
               <Legend verticalAlign="bottom" iconType="circle" />
             </PieChart>
           </ResponsiveContainer>
