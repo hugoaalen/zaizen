@@ -4,8 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Label,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -41,7 +39,10 @@ const groupByCategory = (transactions, type) =>
     }, [])
     .sort((a, b) => b.value - a.value)
 
-const formatMoney = value => `${Number(value).toFixed(2)} €`
+const formatMoney = value => new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR'
+}).format(value)
 
 function CategoryTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -52,21 +53,6 @@ function CategoryTooltip({ active, payload, label }) {
       <span>{label || item.payload?.name}</span>
       <strong style={{ color: item.color || item.fill }}>{formatMoney(item.value)}</strong>
     </div>
-  )
-}
-
-function DonutCenterLabel({ viewBox, value }) {
-  if (viewBox?.cx == null || viewBox?.cy == null) return null
-
-  return (
-    <g>
-      <text className="donut-total" x={viewBox.cx} y={viewBox.cy - 3} textAnchor="middle">
-        {formatMoney(value)}
-      </text>
-      <text className="donut-caption" x={viewBox.cx} y={viewBox.cy + 17} textAnchor="middle">
-        Total
-      </text>
-    </g>
   )
 }
 
@@ -117,17 +103,32 @@ export default function ExpenseChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="chart-canvas">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 300 }}>
-            <PieChart>
-              <Pie data={data} cx="50%" cy="44%" innerRadius={68} outerRadius={94} paddingAngle={4} dataKey="value" stroke="none">
-                {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
-                <Label content={<DonutCenterLabel value={total} />} position="center" />
-              </Pie>
-              <Tooltip content={<CategoryTooltip />} />
-              <Legend verticalAlign="bottom" iconType="circle" />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="donut-chart">
+          <div className="donut-visual">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 250 }}>
+              <PieChart>
+                <Pie data={data} cx="50%" cy="50%" innerRadius="63%" outerRadius="84%" paddingAngle={3} dataKey="value" stroke="none">
+                  {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
+                </Pie>
+                <Tooltip content={<CategoryTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="donut-center">
+              <span>Total {flow === 'income' ? 'ingresos' : 'gastos'}</span>
+              <strong>{formatMoney(total)}</strong>
+              <small>{data.length} {data.length === 1 ? 'categoría' : 'categorías'}</small>
+            </div>
+          </div>
+
+          <div className="donut-legend" aria-label="Categorías del gráfico">
+            {data.map((item, index) => (
+              <div className="donut-legend-item" key={item.name}>
+                <i style={{ background: colors[index % colors.length] }} />
+                <span title={item.name}>{item.name}</span>
+                <strong>{Math.round((item.value / total) * 100)}%</strong>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -1276,17 +1276,102 @@ body {
   font-size: 14px;
 }
 
-.donut-total {
-  fill: var(--text-main);
-  font-size: 17px;
-  font-weight: 800;
+.donut-chart {
+  margin-top: 8px;
 }
 
-.donut-caption {
-  fill: var(--text-muted);
+.donut-visual {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 250px;
+}
+
+.donut-visual .recharts-responsive-container {
+  position: relative;
+  z-index: 2;
+}
+
+.donut-visual .recharts-tooltip-wrapper {
+  z-index: 4;
+}
+
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  width: 130px;
+  height: 130px;
+  padding: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bg-card) 64%, transparent 65%);
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.donut-center span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.donut-center strong {
+  margin: 6px 0 3px;
+  color: var(--text-main);
+  font-size: 19px;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.donut-center small {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.donut-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.donut-legend-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: var(--input-bg);
+}
+
+.donut-legend-item i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.donut-legend-item span {
+  overflow: hidden;
+  color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
-  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-legend-item strong {
+  color: var(--text-main);
+  font-size: 10px;
 }
 
 /* Annual view */
@@ -1950,12 +2035,37 @@ body {
     flex: 1;
   }
 
+  .donut-chart {
+    margin-top: 2px;
+  }
+
+  .donut-visual {
+    height: 220px;
+  }
+
+  .donut-center {
+    width: 112px;
+    height: 112px;
+  }
+
+  .donut-center strong {
+    font-size: 16px;
+  }
+
+  .donut-legend {
+    gap: 5px;
+  }
+
+  .donut-legend-item {
+    padding: 6px 7px;
+  }
+
   .compact-chart-header {
     flex-direction: column;
   }
 
   .compact-history {
-    padding: 16px;
+    padding: 14px;
   }
 
   .compact-history-heading {
@@ -1971,18 +2081,65 @@ body {
   }
 
   .compact-transaction {
-    padding: 11px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 10px;
+    min-height: 0;
+    padding: 10px;
+    border-radius: 11px;
+  }
+
+  .transaction-symbol {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  .transaction-copy strong {
+    font-size: 13px;
+  }
+
+  .transaction-copy > div {
+    gap: 5px;
+    margin-top: 4px;
+  }
+
+  .transaction-copy > div span {
+    padding: 2px 6px;
+    font-size: 9px;
   }
 
   .transaction-side {
+    align-self: stretch;
     align-items: flex-end;
+    justify-content: space-between;
     flex-direction: column;
-    padding-left: 53px;
+    grid-column: 3;
+    grid-row: 1;
+    gap: 6px;
+    padding-left: 0;
   }
 
   .transaction-side > .amount-income,
   .transaction-side > .amount-expense {
     min-width: 0;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .transaction-actions {
+    gap: 2px;
+  }
+
+  .transaction-actions .icon-button {
+    width: 27px;
+    height: 27px;
+    border-radius: 7px;
+  }
+
+  .transaction-actions .icon-button svg {
+    width: 14px;
+    height: 14px;
   }
 
   .transaction-modal {
