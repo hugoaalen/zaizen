@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  applyCategorizationRules,
   categorizeBankDescription,
   createTransactionFingerprint,
   detectColumnMapping,
@@ -9,6 +10,7 @@ import {
   parseBankAmount,
   parseBankDate,
   parseCsv
+  , suggestRulePattern
 } from '../src/csvImportUtils.js'
 
 test('parses semicolon CSV with quoted fields', () => {
@@ -76,4 +78,21 @@ test('flags dates outside the dominant extract year', () => {
   assert.equal(flagged[10].selected, true)
   assert.equal(flagged[11].selected, false)
   assert.match(flagged[11].warnings[0], /2025/)
+})
+
+test('applies the longest learned categorization rule', () => {
+  const [row] = applyCategorizationRules(
+    [{ description: 'MERCADONA AVDA FLORIDA VIGO', type: 'expense', category: 'Varios' }],
+    [
+      { pattern: 'mercadona', transaction_type: 'expense', category: 'Comida' },
+      { pattern: 'mercadona avda', transaction_type: 'expense', category: 'Compras' }
+    ]
+  )
+  assert.equal(row.category, 'Compras')
+  assert.equal(row.appliedRule, 'mercadona avda')
+})
+
+test('suggests a stable merchant pattern', () => {
+  assert.equal(suggestRulePattern('MERCADONA AVDA FLORIDA\\VIGO\\ES2512'), 'mercadona avda')
+  assert.equal(suggestRulePattern('12 PADEL ZENTER 000000123'), '12 padel')
 })

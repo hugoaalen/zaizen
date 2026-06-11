@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import {
+  applyCategorizationRules,
   createTransactionFingerprint,
   detectColumnMapping,
   flagDateOutliers,
   mapCsvRows,
   parseCsv
+  , suggestRulePattern
 } from './csvImportUtils'
 
 const readBankFile = async (file) => {
@@ -16,7 +18,7 @@ const readBankFile = async (file) => {
   return text
 }
 
-export default function BankCsvImporter({ user, customCategories, onImported }) {
+export default function BankCsvImporter({ user, customCategories, onImported, onRulesChanged }) {
   const [fileName, setFileName] = useState('')
   const [headers, setHeaders] = useState([])
   const [sourceRows, setSourceRows] = useState([])
@@ -74,7 +76,20 @@ export default function BankCsvImporter({ user, customCategories, onImported }) 
   const buildPreview = async () => {
     setLoading(true)
     setStatus('')
-    const mappedRows = flagDateOutliers(mapCsvRows(sourceRows, mapping, { expenseSign }))
+    const { data: learnedRules, error: rulesError } = await supabase
+      .from('categorization_rules')
+      .select('pattern,category,transaction_type')
+      .eq('user_id', user.id)
+
+    if (rulesError) {
+      setStatus('No se pudieron cargar las reglas de categorización.')
+      setLoading(false)
+      return
+    }
+
+    const mappedRows = flagDateOutliers(
+      applyCategorizationRules(mapCsvRows(sourceRows, mapping, { expenseSign }), learnedRules)
+    )
     const datedRows = mappedRows.filter(row => row.date)
     const dates = datedRows.map(row => row.date).sort()
     let existingFingerprints = new Set()
@@ -136,11 +151,35 @@ export default function BankCsvImporter({ user, customCategories, onImported }) 
       type: row.type,
       category: row.category || 'Varios'
     }))
+    const learnedRows = selectedRows.filter(row => row.learnRule && row.rulePattern)
     const { error } = await supabase.from('transactions').insert(payload)
 
     if (error) {
       setStatus('No se pudieron importar los movimientos.')
     } else {
+      if (learnedRows.length) {
+        const rules = [...new Map(learnedRows.map(row => [
+          `${row.type}:${row.rulePattern}`,
+          {
+            user_id: user.id,
+            pattern: row.rulePattern,
+            category: row.category,
+            transaction_type: row.type,
+            updated_at: new Date().toISOString()
+          }
+        ])).values()]
+        const { error: ruleError } = await supabase
+          .from('categorization_rules')
+          .upsert(rules, { onConflict: 'user_id,pattern,transaction_type' })
+
+        if (ruleError) {
+          setStatus('Movimientos importados, pero no se pudieron guardar algunas reglas.')
+          setLoading(false)
+          onImported?.()
+          return
+        }
+        onRulesChanged?.()
+      }
       const importedCount = payload.length
       reset()
       setStatus(`${importedCount} movimientos importados correctamente.`)
@@ -272,13 +311,28 @@ export default function BankCsvImporter({ user, customCategories, onImported }) 
                     <select
                       className="input-minimal import-category"
                       value={row.category}
-                      onChange={event => updateRow(row.sourceIndex, { category: event.target.value })}
+                      onChange={event => updateRow(row.sourceIndex, {
+                        category: event.target.value,
+                        learnRule: true,
+                        rulePattern: suggestRulePattern(row.description)
+                      })}
                     >
                       {[...new Set([row.category, ...categoriesByType[row.type]])].map(category => <option key={category} value={category}>{category}</option>)}
                     </select>
                     <strong className={row.type === 'income' ? 'amount-income' : 'amount-expense'}>
                       {row.type === 'income' ? '+' : '-'}{Number(row.amount).toFixed(2)} €
                     </strong>
+                    {row.appliedRule && <small className="learned-rule-badge">Regla: {row.appliedRule}</small>}
+                    {row.learnRule && (
+                      <label className="learn-rule-toggle">
+                        <input
+                          type="checkbox"
+                          checked={row.learnRule}
+                          onChange={event => updateRow(row.sourceIndex, { learnRule: event.target.checked })}
+                        />
+                        Recordar “{row.rulePattern}”
+                      </label>
+                    )}
                   </>
                 )}
               </article>

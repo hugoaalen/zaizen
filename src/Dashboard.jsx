@@ -9,6 +9,8 @@ import BudgetManager from './BudgetManager'
 import TransactionModal from './TransactionModal'
 import CollapsibleSection from './CollapsibleSection'
 import BankCsvImporter from './BankCsvImporter'
+import CategorizationRulesManager from './CategorizationRulesManager'
+import SavingsGoals from './SavingsGoals'
 import { LogoutIcon, MoonIcon, SettingsIcon, SunIcon } from './TopbarIcons'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
@@ -47,6 +49,7 @@ export default function Dashboard({ session, theme, setTheme }) {
   const [previousTransactions, setPreviousTransactions] = useState([])
   const [customCategories, setCustomCategories] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [rulesRefreshKey, setRulesRefreshKey] = useState(0)
 
   const [chartTypeMonthly, setChartTypeMonthly] = useState(() => localStorage.getItem('chartTypeMonthly') || 'circular')
   const [chartTypeYearly, setChartTypeYearly] = useState(() => localStorage.getItem('chartTypeYearly') || 'barras')
@@ -177,11 +180,15 @@ export default function Dashboard({ session, theme, setTheme }) {
       label: 'Importar',
       icon: '⇩',
       content: (
-        <BankCsvImporter
-          user={session.user}
-          customCategories={customCategories}
-          onImported={fetchTransactions}
-        />
+        <div className="settings-stack">
+          <BankCsvImporter
+            user={session.user}
+            customCategories={customCategories}
+            onImported={fetchTransactions}
+            onRulesChanged={() => setRulesRefreshKey(key => key + 1)}
+          />
+          <CategorizationRulesManager user={session.user} refreshKey={rulesRefreshKey} />
+        </div>
       )
     },
     {
@@ -366,6 +373,14 @@ export default function Dashboard({ session, theme, setTheme }) {
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
           />
+
+          <CollapsibleSection
+            title="Objetivos de ahorro"
+            description="Metas, aportaciones y progreso"
+            storageKey="dashboardSavingsGoalsOpen"
+          >
+            <SavingsGoals user={session.user} />
+          </CollapsibleSection>
 
           <div className="dashboard-content-grid">
             <CollapsibleSection

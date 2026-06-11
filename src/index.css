@@ -661,6 +661,12 @@ body {
 }
 
 /* Bank CSV import */
+.settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .bank-file-drop {
   display: flex;
   align-items: center;
@@ -786,6 +792,59 @@ body {
   gap: 9px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.learned-rule-badge,
+.learn-rule-toggle {
+  grid-column: 2 / -1;
+}
+
+.learned-rule-badge {
+  color: var(--btn-bg);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.learn-rule-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.learned-rules-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.learned-rule-row {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 11px;
+  min-height: 58px;
+  padding: 11px 18px 11px 22px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.learned-rule-row:last-child {
+  border-bottom: 0;
+}
+
+.learned-rule-row strong,
+.learned-rule-row small {
+  display: block;
+}
+
+.learned-rule-row strong {
+  font-size: 12px;
+}
+
+.learned-rule-row small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
 }
 
 .import-preview-row:last-child {
@@ -1345,6 +1404,197 @@ body {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: 18px;
   align-items: start;
+}
+
+/* Savings goals */
+.savings-goals {
+  padding: 20px;
+}
+
+.savings-goal-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(120px, 0.7fr) minmax(150px, 0.8fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 13px;
+  background: var(--input-bg);
+}
+
+.savings-goal-form label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.savings-goal-form .input-minimal {
+  margin-top: 7px;
+  background: var(--bg-card);
+}
+
+.savings-goal-form .btn-minimal {
+  width: auto;
+  min-height: 43px;
+  white-space: nowrap;
+}
+
+.savings-goal-error {
+  margin: 0 0 16px;
+}
+
+.savings-goal-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.savings-goal-empty {
+  grid-column: 1 / -1;
+  padding: 34px 20px;
+  text-align: center;
+}
+
+.savings-goal-empty strong {
+  font-size: 14px;
+}
+
+.savings-goal-empty p {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.savings-goal-card {
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  background: var(--input-bg);
+}
+
+.savings-goal-card.completed {
+  border-color: color-mix(in srgb, var(--color-income) 32%, var(--border-color));
+}
+
+.savings-goal-card.overdue {
+  border-color: color-mix(in srgb, var(--color-expense) 32%, var(--border-color));
+}
+
+.savings-goal-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.savings-goal-card > header span {
+  color: var(--btn-bg);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.savings-goal-card.completed > header span {
+  color: var(--color-income);
+}
+
+.savings-goal-card.overdue > header span {
+  color: var(--color-expense);
+}
+
+.savings-goal-card h3 {
+  margin-top: 5px;
+  font-size: 16px;
+}
+
+.savings-goal-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.savings-goal-amounts strong {
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.savings-goal-amounts span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.savings-goal-track {
+  height: 8px;
+  margin: 11px 0 15px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-card);
+}
+
+.savings-goal-track > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--btn-bg), #8b5cf6);
+  transition: width 0.25s ease;
+}
+
+.savings-goal-card.completed .savings-goal-track > div {
+  background: var(--color-income);
+}
+
+.savings-goal-insights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.savings-goal-insights p {
+  min-width: 0;
+}
+
+.savings-goal-insights span,
+.savings-goal-insights strong {
+  display: block;
+}
+
+.savings-goal-insights span {
+  color: var(--text-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.savings-goal-insights strong {
+  overflow: hidden;
+  margin-top: 5px;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.savings-contribution-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.savings-contribution-form .input-minimal {
+  margin: 0;
+  background: var(--bg-card);
+}
+
+@media (max-width: 900px) {
+  .savings-goal-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .savings-goal-form .btn-minimal {
+    width: 100%;
+  }
 }
 
 .dashboard-section {
@@ -2105,6 +2355,15 @@ body {
   }
 
   .dashboard-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .savings-goals {
+    padding: 16px;
+  }
+
+  .savings-goal-form,
+  .savings-goal-list {
     grid-template-columns: 1fr;
   }
 

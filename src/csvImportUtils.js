@@ -6,6 +6,33 @@ const normalize = value => String(value || '')
   .trim()
   .toLowerCase()
 
+export const normalizeRuleText = value => normalize(value)
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+
+export const suggestRulePattern = description => {
+  const clean = normalizeRuleText(String(description || '').split('\\')[0])
+    .replace(/\b\d{5,}\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return clean.split(' ').filter(Boolean).slice(0, 2).join(' ')
+}
+
+export const applyCategorizationRules = (rows, rules = []) => {
+  const orderedRules = [...rules].sort((a, b) => b.pattern.length - a.pattern.length)
+  return rows.map(row => {
+    const description = normalizeRuleText(row.description)
+    const rule = orderedRules.find(item =>
+      item.transaction_type === row.type &&
+      description.includes(normalizeRuleText(item.pattern))
+    )
+    return rule
+      ? { ...row, category: rule.category, appliedRule: rule.pattern }
+      : row
+  })
+}
+
 const COLUMN_ALIASES = {
   date: ['fecha', 'fecha operacion', 'fecha valor', 'date', 'booking date', 'transaction date'],
   description: ['concepto', 'descripcion', 'detalle', 'movimiento', 'comercio', 'description', 'details', 'merchant', 'memo'],
