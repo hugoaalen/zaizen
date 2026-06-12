@@ -132,11 +132,13 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
       <section className="auth-showcase" aria-label="Presentación de ZaiZen">
         <div className="auth-brand">
           <BrandIcon />
-          <strong>ZaiZen</strong>
+          <div>
+            <strong>ZaiZen</strong>
+            <span>Control financiero personal</span>
+          </div>
         </div>
 
         <div className="auth-showcase-copy">
-          <span className="auth-kicker">Control financiero personal</span>
           <h1>Ordena tus finanzas.<br />Respira tranquilo.</h1>
           <p>Una visión sencilla de lo que entra, lo que sale y todo lo que quieres conseguir.</p>
         </div>

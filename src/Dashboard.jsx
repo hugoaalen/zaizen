@@ -454,6 +454,7 @@ export default function Dashboard({ session, theme, setTheme }) {
               title="Presupuestos"
               description="Límites y consumo por categoría"
               storageKey="dashboardBudgetsOpen"
+              className="dashboard-grid-budget"
             >
               <BudgetManager
                 user={session.user}
@@ -468,25 +469,26 @@ export default function Dashboard({ session, theme, setTheme }) {
               title="Análisis"
               description="Distribución de ingresos y gastos"
               storageKey="dashboardChartOpen"
+              className="dashboard-grid-analysis"
             >
               <Suspense fallback={<p className="loading-state">Cargando gráfico...</p>}>
                 <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
               </Suspense>
             </CollapsibleSection>
+            <CollapsibleSection
+              title="Actividad"
+              description="Movimientos recientes del periodo"
+              storageKey="dashboardHistoryOpen"
+              className="dashboard-grid-activity"
+            >
+              <TransactionList
+                transactions={transactions}
+                user={session.user}
+                customCategories={customCategories}
+                onTransactionDeleted={fetchTransactions}
+              />
+            </CollapsibleSection>
           </div>
-
-          <CollapsibleSection
-            title="Actividad"
-            description="Movimientos recientes del periodo"
-            storageKey="dashboardHistoryOpen"
-          >
-            <TransactionList
-              transactions={transactions}
-              user={session.user}
-              customCategories={customCategories}
-              onTransactionDeleted={fetchTransactions}
-            />
-          </CollapsibleSection>
         </main>
       ) : (
         <main className="dashboard-main">
