@@ -39,6 +39,80 @@ body {
   min-height: 100vh;
 }
 
+.pwa-status {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 1200;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  width: min(calc(100vw - 32px), 390px);
+  gap: 11px;
+  padding: 12px 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.pwa-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.pwa-status.offline .pwa-status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 5px color-mix(in srgb, #f59e0b 13%, transparent);
+}
+
+.pwa-status.installable .pwa-status-dot {
+  background: var(--btn-bg);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--btn-bg) 13%, transparent);
+}
+
+.pwa-status strong,
+.pwa-status small {
+  display: block;
+}
+
+.pwa-status strong {
+  font-size: 12px;
+}
+
+.pwa-status small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.pwa-status button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--btn-bg);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.quick-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 640px) {
+  .pwa-status {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
 /* Authentication */
 .auth-shell {
   min-height: 100vh;
@@ -792,7 +866,7 @@ body {
 
 .settings-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   padding: 0 30px 18px;
   border-bottom: 1px solid var(--border-color);
@@ -803,14 +877,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 10px 8px;
+  gap: 6px;
+  padding: 8px 5px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -826,8 +900,32 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.settings-tabs button span {
-  font-size: 16px;
+.settings-tab-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--text-muted) 7%, transparent);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.settings-tab-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-tabs button:hover .settings-tab-icon {
+  color: var(--btn-bg);
+  background: color-mix(in srgb, var(--btn-bg) 10%, transparent);
+  transform: translateY(-1px);
+}
+
+.settings-tabs button.active .settings-tab-icon {
+  color: #fff;
+  background: var(--btn-bg);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--btn-bg) 28%, transparent);
 }
 
 .settings-content {
@@ -1110,6 +1208,164 @@ body {
   border-color: var(--btn-bg);
   color: var(--text-main);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--btn-bg) 18%, transparent);
+}
+
+/* Export and privacy */
+.privacy-lock {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--btn-bg);
+  background: color-mix(in srgb, var(--btn-bg) 11%, transparent);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.privacy-action-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.privacy-action {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.privacy-action:last-child {
+  border-bottom: 0;
+}
+
+.privacy-action-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 13px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.privacy-action-icon.csv {
+  color: var(--color-income);
+  background: color-mix(in srgb, var(--color-income) 12%, transparent);
+}
+
+.privacy-action-icon.json {
+  color: var(--btn-bg);
+  background: color-mix(in srgb, var(--btn-bg) 12%, transparent);
+}
+
+.privacy-action strong,
+.privacy-note strong,
+.privacy-delete-summary strong {
+  font-size: 13px;
+}
+
+.privacy-action p,
+.privacy-note p,
+.privacy-delete-summary p,
+.privacy-delete-confirmation p {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.privacy-action .btn-outline {
+  min-width: 98px;
+}
+
+.privacy-action button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.privacy-note {
+  margin: 0 22px 22px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--btn-bg) 16%, var(--border-color));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--btn-bg) 5%, transparent);
+}
+
+.privacy-danger-zone {
+  border-color: color-mix(in srgb, var(--color-expense) 24%, var(--border-color));
+}
+
+.privacy-danger-zone .settings-section-heading {
+  border-bottom-color: color-mix(in srgb, var(--color-expense) 18%, var(--border-color));
+}
+
+.privacy-delete-summary,
+.privacy-delete-confirmation {
+  padding: 20px 22px;
+}
+
+.privacy-delete-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.privacy-delete-button {
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-expense) 34%, transparent);
+  border-radius: 9px;
+  color: var(--color-expense);
+  background: color-mix(in srgb, var(--color-expense) 8%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.privacy-delete-button:hover {
+  color: #fff;
+  background: var(--color-expense);
+}
+
+.privacy-delete-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.privacy-delete-confirmation .input-minimal {
+  margin-top: 14px;
+  background: var(--bg-card);
+}
+
+.privacy-delete-confirmation > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.privacy-message {
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 11px;
+  font-size: 12px;
+}
+
+.privacy-message.success {
+  border-color: color-mix(in srgb, var(--color-income) 28%, transparent);
+  color: var(--color-income);
+  background: color-mix(in srgb, var(--color-income) 7%, transparent);
+}
+
+.privacy-message.error {
+  border-color: color-mix(in srgb, var(--color-expense) 28%, transparent);
+  color: var(--color-expense);
+  background: color-mix(in srgb, var(--color-expense) 7%, transparent);
 }
 
 .palette-preview {
@@ -1468,12 +1724,17 @@ body {
 
   .settings-tabs button {
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     font-size: 11px;
   }
 
+  .settings-tab-icon {
+    width: 32px;
+    height: 32px;
+  }
+
   .settings-tabs {
-    grid-template-columns: repeat(4, minmax(70px, 1fr));
+    grid-template-columns: repeat(5, minmax(70px, 1fr));
     overflow-x: auto;
   }
 
@@ -1542,6 +1803,44 @@ body {
   .import-preview-row .import-type,
   .import-preview-row .import-category {
     grid-column: 2 / -1;
+  }
+
+  .privacy-action {
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .privacy-action-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .privacy-action .btn-outline {
+    grid-column: 2;
+    width: 100%;
+  }
+
+  .privacy-note {
+    margin: 0 16px 16px;
+  }
+
+  .privacy-delete-summary {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 18px 16px;
+  }
+
+  .privacy-delete-summary .privacy-delete-button {
+    width: 100%;
+  }
+
+  .privacy-delete-confirmation {
+    padding: 18px 16px;
+  }
+
+  .privacy-delete-confirmation > div {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .import-preview-row > .amount-income,

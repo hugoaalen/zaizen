@@ -1,0 +1,30 @@
+{
+  "name": "ZaiZen - Control Financiero",
+  "short_name": "ZaiZen",
+  "description": "Controla movimientos, presupuestos y objetivos de ahorro desde un único espacio.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#121212",
+  "theme_color": "#4f46e5",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/ZaiZen_icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/ZaiZen_icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/ZaiZen_icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

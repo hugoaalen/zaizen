@@ -13,6 +13,20 @@ import CategorizationRulesManager from './CategorizationRulesManager'
 import SavingsGoals from './SavingsGoals'
 import { LogoutIcon, MoonIcon, SettingsIcon, SunIcon } from './TopbarIcons'
 import { getRecurringOccurrenceDate } from './recurringUtils'
+import PrivacySettings from './PrivacySettings'
+import {
+  AppearanceIcon,
+  CategoriesIcon,
+  ImportIcon,
+  PrivacyIcon,
+  RecurringIcon
+} from './SettingsIcons'
+import {
+  getMonthlyCachePeriod,
+  loadOfflineData,
+  saveOfflineData
+} from './offlineCache'
+import { useOnlineStatus } from './useOnlineStatus'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -45,6 +59,7 @@ const loadMonthlyTransactions = async (userId, year, month) => {
 }
 
 export default function Dashboard({ session, theme, setTheme }) {
+  const online = useOnlineStatus()
   const [view, setView] = useState('monthly')
   const [transactions, setTransactions] = useState([])
   const [previousTransactions, setPreviousTransactions] = useState([])
@@ -79,6 +94,7 @@ export default function Dashboard({ session, theme, setTheme }) {
   ]
 
   const fetchTransactions = async () => {
+    const cachePeriod = getMonthlyCachePeriod(selectedYear, selectedMonth)
     const [currentResult, previousResult] = await loadMonthlyTransactions(
       session.user.id,
       selectedYear,
@@ -86,12 +102,23 @@ export default function Dashboard({ session, theme, setTheme }) {
     )
 
     if (currentResult.error || previousResult.error) {
-      setErrorMessage('No se pudieron cargar las comparativas mensuales.')
+      const cached = loadOfflineData(session.user.id, 'monthly-transactions', cachePeriod)
+      if (cached) {
+        setTransactions(cached.data.current)
+        setPreviousTransactions(cached.data.previous)
+        setErrorMessage('Sin conexión: mostrando la última copia guardada de este mes.')
+      } else {
+        setErrorMessage('No hay datos guardados para consultar este mes sin conexión.')
+      }
     }
     else {
       setErrorMessage('')
       setTransactions(currentResult.data)
       setPreviousTransactions(previousResult.data)
+      saveOfflineData(session.user.id, 'monthly-transactions', cachePeriod, {
+        current: currentResult.data,
+        previous: previousResult.data
+      })
     }
   }
 
@@ -104,8 +131,13 @@ export default function Dashboard({ session, theme, setTheme }) {
         .eq('user_id', session.user.id)
         .order('name')
       if (!active) return
-      if (error) setErrorMessage('No se pudieron cargar las categorías.')
-      else setCustomCategories(data)
+      if (error) {
+        const cached = loadOfflineData(session.user.id, 'custom-categories', 'all')
+        if (cached) setCustomCategories(cached.data)
+      } else {
+        setCustomCategories(data)
+        saveOfflineData(session.user.id, 'custom-categories', 'all', data)
+      }
     }
     loadCategories()
     return () => { active = false }
@@ -115,6 +147,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     if (view !== 'monthly') return
     let active = true
     const loadTransactions = async () => {
+      const cachePeriod = getMonthlyCachePeriod(selectedYear, selectedMonth)
       const [currentResult, previousResult] = await loadMonthlyTransactions(
         session.user.id,
         selectedYear,
@@ -123,12 +156,25 @@ export default function Dashboard({ session, theme, setTheme }) {
 
       if (!active) return
       if (currentResult.error || previousResult.error) {
-        setErrorMessage('No se pudieron cargar las comparativas mensuales.')
+        const cached = loadOfflineData(session.user.id, 'monthly-transactions', cachePeriod)
+        if (cached) {
+          setTransactions(cached.data.current)
+          setPreviousTransactions(cached.data.previous)
+          setErrorMessage('Sin conexión: mostrando la última copia guardada de este mes.')
+        } else {
+          setTransactions([])
+          setPreviousTransactions([])
+          setErrorMessage('No hay datos guardados para consultar este mes sin conexión.')
+        }
       }
       else {
         setErrorMessage('')
         setTransactions(currentResult.data)
         setPreviousTransactions(previousResult.data)
+        saveOfflineData(session.user.id, 'monthly-transactions', cachePeriod, {
+          current: currentResult.data,
+          previous: previousResult.data
+        })
       }
     }
     loadTransactions()
@@ -142,7 +188,10 @@ export default function Dashboard({ session, theme, setTheme }) {
       .eq('user_id', session.user.id)
       .order('name')
     if (error) setErrorMessage('No se pudieron cargar las categorías.')
-    else setCustomCategories(data)
+    else {
+      setCustomCategories(data)
+      saveOfflineData(session.user.id, 'custom-categories', 'all', data)
+    }
   }
 
   const handleLogout = async () => await supabase.auth.signOut()
@@ -157,7 +206,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     {
       id: 'categories',
       label: 'Categorías',
-      icon: '⌑',
+      icon: <CategoriesIcon />,
       content: (
         <CategorySettings
           user={session.user}
@@ -168,7 +217,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     {
       id: 'recurring',
       label: 'Recurrentes',
-      icon: '↻',
+      icon: <RecurringIcon />,
       content: (
         <RecurringManager
           user={session.user}
@@ -179,7 +228,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     {
       id: 'import',
       label: 'Importar',
-      icon: '⇩',
+      icon: <ImportIcon />,
       content: (
         <div className="settings-stack">
           <BankCsvImporter
@@ -195,7 +244,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     {
       id: 'appearance',
       label: 'Apariencia',
-      icon: '◐',
+      icon: <AppearanceIcon />,
       content: (
         <section className="settings-section">
           <div className="settings-section-heading">
@@ -244,6 +293,12 @@ export default function Dashboard({ session, theme, setTheme }) {
           </div>
         </section>
       )
+    },
+    {
+      id: 'privacy',
+      label: 'Privacidad',
+      icon: <PrivacyIcon />,
+      content: <PrivacySettings user={session.user} />
     }
   ]
 
@@ -366,13 +421,13 @@ export default function Dashboard({ session, theme, setTheme }) {
             </div>
 
             <div className="quick-actions">
-              <button className="quick-action expense" onClick={() => setNewTransactionType('expense')}>
+              <button className="quick-action expense" onClick={() => setNewTransactionType('expense')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
                 <span>−</span> Añadir gasto
               </button>
-              <button className="quick-action income" onClick={() => setNewTransactionType('income')}>
+              <button className="quick-action income" onClick={() => setNewTransactionType('income')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
                 <span>+</span> Añadir ingreso
               </button>
-              <button className="quick-action recurring" onClick={applyRecurring}>
+              <button className="quick-action recurring" onClick={applyRecurring} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
                 <span>↻</span> Aplicar recurrentes
               </button>
             </div>

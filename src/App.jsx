@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import Dashboard from './Dashboard'
+import PwaStatus from './PwaStatus'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -58,6 +59,7 @@ function App() {
         /* Pasamos la función de cambiar tema al Dashboard */
         <Dashboard session={session} theme={theme} setTheme={setTheme} />
       }
+      <PwaStatus />
     </div>
   )
 }

@@ -45,7 +45,7 @@ export default function SettingsPanel({ open, onClose, sections }) {
               className={activeSection === section.id ? 'active' : ''}
               onClick={() => setActiveSection(section.id)}
             >
-              <span>{section.icon}</span>
+              <span className="settings-tab-icon">{section.icon}</span>
               {section.label}
             </button>
           ))}
