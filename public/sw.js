@@ -1,11 +1,12 @@
-const CACHE_VERSION = 'zaizen-shell-v2'
+const CACHE_VERSION = 'zaizen-shell-v3'
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/icons/ZaiZen_icon-192.png',
-  '/icons/ZaiZen_icon-512.png',
-  '/icons/ZaiZen_icon-180.png'
+  '/icons/ZaiZen_app_icon.png',
+  '/icons/ZaiZen_app_icon-192.png',
+  '/icons/ZaiZen_app_icon-512.png',
+  '/icons/ZaiZen_app_icon-180.png'
 ]
 
 const cacheAppShell = async () => {

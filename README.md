@@ -1,34 +1,82 @@
-# ⛩️ ZaiZen - Finanzas en Equilibrio
+# ZaiZen
 
-![ZaiZen Cover](/public/Preview.png) 
+![Vista previa de ZaiZen](./public/Preview.png)
 
-## 🧘‍♂️ ¿Qué es ZaiZen?
+ZaiZen es una aplicación de finanzas personales diseñada para entender de forma
+clara qué dinero entra, dónde se gasta y cómo avanzan tus objetivos. Funciona en
+web y puede instalarse como aplicación en iOS, Android y escritorio.
 
-El nombre **ZaiZen** nace de la fusión de dos conceptos japoneses que definen la esencia de la aplicación:
-* **Zai (財):** Finanzas, dinero o riqueza.
-* **Zen (禅):** Equilibrio, calma y paz mental.
+## Funcionalidades
 
-**ZaiZen** es una aplicación web minimalista de gestión de finanzas personales diseñada para eliminar el estrés del control de gastos. Combina un diseño limpio e intuitivo con herramientas de análisis potentes para darte una visión clara y en calma de tu salud financiera.
+- Dashboard mensual con balance, ingresos, gastos, tasa de ahorro, comparativas
+  con el mes anterior y proyección mensual de gasto.
+- Vista anual con resumen, evolución mensual y gráficos configurables.
+- Registro, edición, duplicado y eliminación de ingresos y gastos.
+- Búsqueda de movimientos sin distinguir mayúsculas ni tildes, además de filtros
+  por tipo y categoría.
+- Distribución por categorías mediante gráficos circulares o de barras, paletas
+  visuales configurables y tooltips detallados.
+- Presupuestos mensuales por categoría con seguimiento del consumo.
+- Objetivos de ahorro con importe objetivo, fecha límite, progreso, aportaciones
+  y recomendación mensual.
+- Movimientos recurrentes mensuales, bimestrales, trimestrales, semestrales o
+  anuales, con día de cargo, fechas de inicio y fin, pausa y aplicación sin
+  duplicados.
+- Categorías personalizadas para ingresos y gastos.
+- Importación de extractos bancarios CSV con detección y mapeo de columnas,
+  previsualización, selección de movimientos, control de fechas atípicas y
+  compatibilidad con importes firmados o columnas separadas de cargo y abono.
+- Reglas de categorización aprendidas a partir de correcciones realizadas
+  durante una importación.
+- Inicio de sesión con correo y contraseña o Google OAuth, recuperación de
+  contraseña y sesiones vinculadas por correo.
+- Exportación de movimientos en CSV y copia completa de los datos en JSON.
+- Eliminación segura de la cuenta y sus datos desde el apartado de privacidad.
+- Temas claro y oscuro, diseño adaptable a móvil y panel de ajustes.
+- PWA instalable con icono propio, caché de la aplicación, indicador de conexión
+  y consulta offline de los últimos datos mensuales guardados.
 
----
+El modo offline actual es de consulta. Para evitar inconsistencias, la creación
+de movimientos y otras operaciones de escritura se desactivan hasta recuperar
+la conexión.
 
-## ✨ Características Principales
+## Instalar como aplicación
 
-* 📊 **Dashboard Interactivo:** Vistas mensuales y anuales con gráficos dinámicos (Donut y Barras) para analizar tus ingresos y gastos de un vistazo.
-* 🧠 **Categorización Inteligente:** Un motor ligero que clasifica automáticamente tus gastos mientras escribes la descripción (ej: "Netflix" -> Suscripciones).
-* ⚙️ **Gestor de Gastos Fijos:** Configura suscripciones o nóminas recurrentes y aplícalos a tu mes con un solo clic.
-* 🏷️ **Categorías Personalizadas:** Crea y gestiona tus propias etiquetas de gastos e ingresos, adaptadas a tu estilo de vida.
-* 🌗 **Modo Oscuro/Claro:** Interfaz adaptable a tus preferencias visuales.
-* 📱 **Diseño Mobile-First:** Experiencia fluida y responsiva tanto en escritorio como en dispositivos móviles (CSS Grid & Flexbox).
+La versión publicada debe servirse mediante HTTPS para que la instalación y el
+modo offline funcionen correctamente.
 
-## 🛠️ Tecnologías Utilizadas
+### iPhone y iPad
 
-* **Frontend:** React + Vite
-* **Estilos:** CSS3 (Custom Properties para Theming + Flexbox/Grid).
-* **Gráficos:** [Recharts](https://recharts.org/)
-* **Componentes:** `react-datepicker`
-* **Backend & Base de Datos:** [Supabase](https://supabase.com/) (Autenticación y PostgreSQL)
-* **Despliegue:** Vercel
+1. Abre la web de ZaiZen con Safari.
+2. Pulsa el botón **Compartir** de Safari.
+3. Desplázate y selecciona **Añadir a pantalla de inicio**.
+4. Comprueba el nombre y pulsa **Añadir**.
+5. Abre ZaiZen desde el nuevo icono de la pantalla de inicio.
+
+Safari puede conservar el icono anterior. Después de actualizar la marca,
+elimina ZaiZen de la pantalla de inicio, vuelve a abrir la web en Safari y
+repítelo para instalar la versión nueva.
+
+### Android
+
+1. Abre la web de ZaiZen con Chrome.
+2. Pulsa el menú de tres puntos.
+3. Selecciona **Instalar aplicación** o **Añadir a pantalla de inicio**.
+4. Confirma la instalación.
+5. Abre ZaiZen desde el icono creado en el escritorio o el cajón de aplicaciones.
+
+En navegadores compatibles también puede aparecer dentro de ZaiZen el aviso
+**Instala ZaiZen** con un botón de instalación.
+
+## Tecnologías
+
+- React 19 y Vite
+- Supabase Auth y PostgreSQL
+- Recharts
+- date-fns y react-datepicker
+- CSS con variables, Grid y Flexbox
+- Service Worker y Web App Manifest
+- Vercel
 
 ## Desarrollo local
 
@@ -38,14 +86,21 @@ cp .env.example .env
 npm run dev
 ```
 
-Antes de usar presupuestos y recurrentes idempotentes, aplica la migración de
-`supabase/migrations` desde Supabase CLI o el SQL Editor del proyecto:
+Configura en `.env` las credenciales públicas del proyecto Supabase:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+Aplica las migraciones de `supabase/migrations` mediante Supabase CLI o el SQL
+Editor del proyecto:
 
 ```bash
 supabase db push
 ```
 
-Comprobaciones disponibles:
+## Comprobaciones
 
 ```bash
 npm run lint
@@ -53,19 +108,23 @@ npm test
 npm run build
 ```
 
-## 🤝 Contribución
+El Service Worker solo se registra en el build de producción. Para probar la PWA
+localmente:
 
-Si quieres mejorar **ZaiZen**, ¡las contribuciones son bienvenidas!
+```bash
+npm run build
+npm run preview
+```
 
-1. Haz un Fork del proyecto.
-2. Crea tu rama de características (`git checkout -b feature/NuevaCaracteristica`).
-3. Haz Commit de tus cambios (`git commit -m 'Añadir nueva característica'`).
-4. Haz Push a la rama (`git push origin feature/NuevaCaracteristica`).
-5. Abre un Pull Request.
+## Contribución
 
-## 📄 Licencia
+1. Haz un fork del proyecto.
+2. Crea una rama para el cambio.
+3. Ejecuta lint, tests y build.
+4. Envía un pull request explicando el comportamiento añadido o corregido.
 
-Este proyecto está bajo la Licencia MIT.
+## Licencia
 
----
-**Desarrollado con ❤️ y ☕ por Hugo Alén.**
+Este proyecto se distribuye bajo la licencia MIT.
+
+Desarrollado por Hugo Alén.

@@ -27,6 +27,7 @@ import {
   saveOfflineData
 } from './offlineCache'
 import { useOnlineStatus } from './useOnlineStatus'
+import BrandIcon from './BrandIcon'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -367,7 +368,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     <div className="dashboard-shell">
       <header className="dashboard-topbar">
         <div className="dashboard-brand">
-          <span>Z</span>
+          <BrandIcon />
           <div>
             <strong>ZaiZen</strong>
             <small>

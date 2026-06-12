@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
+import BrandIcon from './BrandIcon'
 
 const AUTH_COPY = {
   login: {
@@ -130,7 +131,7 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
     <main className="auth-shell">
       <section className="auth-showcase" aria-label="Presentación de ZaiZen">
         <div className="auth-brand">
-          <span>Z</span>
+          <BrandIcon />
           <strong>ZaiZen</strong>
         </div>
 
@@ -169,7 +170,7 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
       <section className="auth-access">
         <div className="auth-access-inner">
           <div className="auth-mobile-brand">
-            <span>Z</span>
+            <BrandIcon />
             <strong>ZaiZen</strong>
           </div>
 
