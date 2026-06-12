@@ -12,6 +12,7 @@ import BankCsvImporter from './BankCsvImporter'
 import CategorizationRulesManager from './CategorizationRulesManager'
 import SavingsGoals from './SavingsGoals'
 import { LogoutIcon, MoonIcon, SettingsIcon, SunIcon } from './TopbarIcons'
+import { getRecurringOccurrenceDate } from './recurringUtils'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -247,22 +248,32 @@ export default function Dashboard({ session, theme, setTheme }) {
   ]
 
   const applyRecurring = async () => {
-    const { data: subs } = await supabase
+    const { data: subs, error: subscriptionsError } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('user_id', session.user.id)
-      .or(`month.is.null,month.eq.${selectedMonth}`);
+      .eq('user_id', session.user.id);
 
-    if (!subs || subs.length === 0) {
-      alert("No hay gastos fijos configurados para este mes.");
+    if (subscriptionsError) {
+      setErrorMessage('No se pudieron cargar los movimientos recurrentes.')
+      return
+    }
+
+    const scheduledSubscriptions = (subs || [])
+      .map(subscription => ({
+        subscription,
+        occurrenceDate: getRecurringOccurrenceDate(subscription, selectedYear, selectedMonth)
+      }))
+      .filter(item => item.occurrenceDate)
+
+    if (scheduledSubscriptions.length === 0) {
+      alert("No hay movimientos recurrentes programados para este mes.");
       return;
     }
 
-    const recurringPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
-    const subsToInsert = subs.filter(sub =>
+    const subsToInsert = scheduledSubscriptions.filter(({ subscription, occurrenceDate }) =>
       !transactions.some(t =>
-        String(t.recurring_source_id) === String(sub.id) &&
-        t.recurring_period === recurringPeriod
+        String(t.recurring_source_id) === String(subscription.id) &&
+        t.recurring_period === occurrenceDate
       )
     )
 
@@ -271,15 +282,15 @@ export default function Dashboard({ session, theme, setTheme }) {
       return;
     }
 
-    const finalData = subsToInsert.map(s => ({
+    const finalData = subsToInsert.map(({ subscription, occurrenceDate }) => ({
       user_id: session.user.id,
-      amount: s.amount,
-      description: `[Fijo] ${s.description}`,
-      type: s.type,
-      date: recurringPeriod,
-      category: s.category || 'Varios',
-      recurring_source_id: String(s.id),
-      recurring_period: recurringPeriod
+      amount: subscription.amount,
+      description: `[Recurrente] ${subscription.description}`,
+      type: subscription.type,
+      date: occurrenceDate,
+      category: subscription.category || 'Varios',
+      recurring_source_id: String(subscription.id),
+      recurring_period: occurrenceDate
     }));
 
     const { error } = await supabase

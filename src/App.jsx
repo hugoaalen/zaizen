@@ -5,6 +5,9 @@ import Dashboard from './Dashboard'
 
 function App() {
   const [session, setSession] = useState(null)
+  const [recoveryMode, setRecoveryMode] = useState(
+    () => window.location.hash.includes('type=recovery')
+  )
   
   const [theme, setTheme] = useState(() => {
   // 1. ¿Hay algo guardado de antes? Úsalo.
@@ -22,10 +25,12 @@ function App() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  // Lógica de Supabase (sin cambios)
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
+      setSession(session)
+    })
     return () => subscription.unsubscribe()
   }, [])
 
@@ -45,8 +50,11 @@ function App() {
 
   return (
     <div>
-      {!session ? 
-        <Auth /> : 
+      {!session || recoveryMode ?
+        <Auth
+          recoveryMode={recoveryMode}
+          onRecoveryComplete={() => setRecoveryMode(false)}
+        /> :
         /* Pasamos la función de cambiar tema al Dashboard */
         <Dashboard session={session} theme={theme} setTheme={setTheme} />
       }
