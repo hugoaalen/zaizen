@@ -2242,23 +2242,15 @@ body {
 .dashboard-content-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  grid-template-areas:
-    "budget analysis"
-    "activity analysis";
   gap: 18px;
   align-items: start;
 }
 
-.dashboard-grid-budget {
-  grid-area: budget;
-}
-
-.dashboard-grid-analysis {
-  grid-area: analysis;
-}
-
-.dashboard-grid-activity {
-  grid-area: activity;
+.dashboard-content-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 18px;
 }
 
 /* Savings goals */
@@ -3184,6 +3176,22 @@ body {
       "budget"
       "analysis"
       "activity";
+  }
+
+  .dashboard-content-column {
+    display: contents;
+  }
+
+  .dashboard-grid-budget {
+    grid-area: budget;
+  }
+
+  .dashboard-grid-analysis {
+    grid-area: analysis;
+  }
+
+  .dashboard-grid-activity {
+    grid-area: activity;
   }
 }
 
