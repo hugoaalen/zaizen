@@ -14,6 +14,7 @@ const createInitialForm = () => ({
   category: 'Varios',
   frequency: 'monthly',
   chargeDay: '1',
+  alwaysActive: true,
   startDate: new Date().toISOString().slice(0, 10),
   endDate: ''
 })
@@ -82,8 +83,8 @@ export default function RecurringManager({ user, customCategories }) {
       month: null,
       frequency: String(formData.get('frequency')),
       charge_day: Number(formData.get('chargeDay')),
-      start_date: String(formData.get('startDate')),
-      end_date: String(formData.get('endDate')) || null
+      start_date: form.alwaysActive ? '2000-01-01' : String(formData.get('startDate')),
+      end_date: form.alwaysActive ? null : String(formData.get('endDate')) || null
     }
     const query = editingId
       ? supabase.from('subscriptions').update(payload).eq('id', editingId).eq('user_id', user.id)
@@ -106,6 +107,7 @@ export default function RecurringManager({ user, customCategories }) {
       category: subscription.category || 'Varios',
       frequency: subscription.frequency || (subscription.month ? 'yearly' : 'monthly'),
       chargeDay: String(subscription.charge_day || 1),
+      alwaysActive: subscription.start_date === '2000-01-01' && !subscription.end_date,
       startDate: subscription.start_date || new Date().toISOString().slice(0, 10),
       endDate: subscription.end_date || ''
     })
@@ -181,14 +183,29 @@ export default function RecurringManager({ user, customCategories }) {
           Día de cargo
           <input className="input-minimal" name="chargeDay" type="number" min="1" max="31" value={form.chargeDay} onChange={e => updateForm('chargeDay', e.target.value)} required />
         </label>
-        <label>
-          Fecha de inicio
-          <input className="input-minimal" name="startDate" type="date" value={form.startDate} onChange={e => updateForm('startDate', e.target.value)} required />
+        <label className="recurring-always-active">
+          <input
+            type="checkbox"
+            checked={form.alwaysActive}
+            onChange={e => updateForm('alwaysActive', e.target.checked)}
+          />
+          <span>
+            <strong>Siempre activo</strong>
+            <small>Sin fecha de inicio ni de fin, como los recurrentes anteriores.</small>
+          </span>
         </label>
-        <label>
-          Fecha de fin
-          <input className="input-minimal" name="endDate" type="date" min={form.startDate} value={form.endDate} onChange={e => updateForm('endDate', e.target.value)} />
-        </label>
+        {!form.alwaysActive && (
+          <>
+            <label>
+              Fecha de inicio
+              <input className="input-minimal" name="startDate" type="date" value={form.startDate} onChange={e => updateForm('startDate', e.target.value)} required />
+            </label>
+            <label>
+              Fecha de fin
+              <input className="input-minimal" name="endDate" type="date" min={form.startDate} value={form.endDate} onChange={e => updateForm('endDate', e.target.value)} />
+            </label>
+          </>
+        )}
         <div className="recurring-form-actions">
           {editingId && <button type="button" className="btn-outline" onClick={resetForm}>Cancelar</button>}
           <button type="submit" className="btn-minimal settings-add-button">
@@ -206,8 +223,9 @@ export default function RecurringManager({ user, customCategories }) {
               <strong>{s.description}</strong>
               <small>{s.category} · {describeRecurringSchedule(s)}</small>
               <small>
-                Desde {s.start_date || 'siempre'}
-                {s.end_date ? ` hasta ${s.end_date}` : ' · sin fecha de fin'}
+                {s.start_date === '2000-01-01' && !s.end_date
+                  ? 'Siempre activo'
+                  : `Desde ${s.start_date}${s.end_date ? ` hasta ${s.end_date}` : ' · sin fecha de fin'}`}
               </small>
             </div>
             <span className={s.type === 'income' ? 'amount-income' : 'amount-expense'}>

@@ -1075,6 +1075,44 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   max-width: 100%;
 }
 
+.recurring-always-active {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.recurring-always-active input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--btn-bg);
+}
+
+.recurring-always-active strong,
+.recurring-always-active small {
+  display: block;
+}
+
+.recurring-always-active strong {
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.recurring-always-active small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
 .recurring-form .wide-field,
 .recurring-form .recurring-form-actions {
   grid-column: 1 / -1;
