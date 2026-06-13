@@ -602,6 +602,44 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   text-align: left;
 }
 
+.date-field-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  gap: 8px;
+}
+
+.date-field > label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.date-field-control .input-minimal {
+  margin-top: 7px;
+}
+
+.date-field-clear {
+  align-self: stretch;
+  min-width: 62px;
+  margin-top: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--btn-bg);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.date-field-clear:hover {
+  background: color-mix(in srgb, var(--btn-bg) 10%, var(--bg-card));
+}
+
 .input-minimal:focus {
   border-color: var(--text-muted);
 }
@@ -1070,7 +1108,9 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .recurring-form label,
-.savings-goal-form label {
+.savings-goal-form label,
+.recurring-form .date-field,
+.savings-goal-form .date-field {
   min-width: 0;
   max-width: 100%;
 }

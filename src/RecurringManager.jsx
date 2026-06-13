@@ -6,6 +6,7 @@ import {
   getFrequencyLabel,
   RECURRING_FREQUENCIES
 } from './recurringUtils'
+import DateField from './DateField'
 
 const createInitialForm = () => ({
   amount: '',
@@ -196,14 +197,20 @@ export default function RecurringManager({ user, customCategories }) {
         </label>
         {!form.alwaysActive && (
           <>
-            <label>
-              Fecha de inicio
-              <input className="input-minimal" name="startDate" type="date" value={form.startDate} onChange={e => updateForm('startDate', e.target.value)} required />
-            </label>
-            <label>
-              Fecha de fin
-              <input className="input-minimal" name="endDate" type="date" min={form.startDate} value={form.endDate} onChange={e => updateForm('endDate', e.target.value)} />
-            </label>
+            <DateField
+              label="Fecha de inicio"
+              name="startDate"
+              value={form.startDate}
+              onChange={value => updateForm('startDate', value)}
+              required
+            />
+            <DateField
+              label="Fecha de fin"
+              name="endDate"
+              min={form.startDate}
+              value={form.endDate}
+              onChange={value => updateForm('endDate', value)}
+            />
           </>
         )}
         <div className="recurring-form-actions">

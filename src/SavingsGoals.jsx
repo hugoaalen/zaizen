@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { getGoalProgress } from './savingsGoalUtils'
+import DateField from './DateField'
 
 const formatMoney = value => new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -146,18 +147,14 @@ export default function SavingsGoals({ user }) {
             required
           />
         </label>
-        <label>
-          Fecha límite
-          <input
-            className="input-minimal"
-            name="targetDate"
-            type="date"
-            min={new Date().toISOString().slice(0, 10)}
-            value={targetDate}
-            onChange={event => setTargetDate(event.target.value)}
-            required
-          />
-        </label>
+        <DateField
+          label="Fecha límite"
+          name="targetDate"
+          min={new Date().toISOString().slice(0, 10)}
+          value={targetDate}
+          onChange={setTargetDate}
+          required
+        />
         <button className="btn-minimal" disabled={loading}>
           {loading ? 'Guardando...' : 'Crear objetivo'}
         </button>
