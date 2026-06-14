@@ -54,9 +54,13 @@ export const CATEGORY_MAP = {
     'billar', 'dardos', 'paintball', 'laser tag', 'go kart', 'karting',
     'parque', 'atracciones', 'zoo', 'aquarium', 'parque natural',
     'libro', 'libreria', 'ebook', 'kindle', 'lectura',
-    'curso', 'formacion', 'master', 'clase', 'academia', 'escuela',
     'netflix', 'spotify', 'hbo', 'disney', 'fotografia', 'vlog',
     'tinder', 'ligar'
+  ],
+  educación: [
+    'curso', 'formacion', 'formación', 'master', 'máster', 'clase', 'academia',
+    'escuela', 'colegio', 'universidad', 'matricula', 'matrícula', 'estudios',
+    'material escolar', 'libro de texto'
   ],
   salud: [
     'farmacia', 'dentista', 'medico', 'fisio', 'psicologo', 'optica',
@@ -112,6 +116,7 @@ export const BASE_EXPENSE_CATEGORIES = [
   'Transporte', 
   'Hogar', 
   'Ocio', 
+  'Educación',
   'Salud', 
   'Suscripciones', 
   'Compras'

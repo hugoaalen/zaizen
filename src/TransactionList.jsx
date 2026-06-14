@@ -2,6 +2,11 @@ import { useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import { formatTransactionDate } from './dateUtils'
+import {
+  getPreferredCategoryName,
+  mergeCategoryNames,
+  normalizeCategoryKey
+} from './categoryUtils'
 
 const normalizeSearchText = (value) =>
   value
@@ -47,7 +52,12 @@ export default function TransactionList({ transactions, user, customCategories, 
   const [expanded, setExpanded] = useState(false)
 
   const categories = useMemo(
-    () => [...new Set(transactions.map(transaction => transaction.category || 'Varios'))].sort(),
+    () => mergeCategoryNames(transactions.map(transaction =>
+      getPreferredCategoryName(
+        transaction.category,
+        transaction.type === 'income' ? BASE_INCOME_CATEGORIES : BASE_EXPENSE_CATEGORIES
+      )
+    )).sort(),
     [transactions]
   )
 
@@ -56,16 +66,17 @@ export default function TransactionList({ transactions, user, customCategories, 
     return transactions.filter(transaction => {
       const matchesSearch = !term || normalizeSearchText(transaction.description).includes(term)
       const matchesType = typeFilter === 'all' || transaction.type === typeFilter
-      const matchesCategory = categoryFilter === 'all' || (transaction.category || 'Varios') === categoryFilter
+      const matchesCategory = categoryFilter === 'all'
+        || normalizeCategoryKey(transaction.category || 'Varios') === normalizeCategoryKey(categoryFilter)
       return matchesSearch && matchesType && matchesCategory
     })
   }, [categoryFilter, search, transactions, typeFilter])
 
   const availableEditCategories = editing
-    ? [...new Set([
-        ...(editing.type === 'income' ? BASE_INCOME_CATEGORIES : BASE_EXPENSE_CATEGORIES),
-        ...(customCategories || []).filter(category => category.type === editing.type).map(category => category.name)
-      ])]
+    ? mergeCategoryNames(
+        editing.type === 'income' ? BASE_INCOME_CATEGORIES : BASE_EXPENSE_CATEGORIES,
+        (customCategories || []).filter(category => category.type === editing.type).map(category => category.name)
+      )
     : []
 
   const visibleTransactions = expanded ? filteredTransactions : filteredTransactions.slice(0, 5)
@@ -189,7 +200,20 @@ export default function TransactionList({ transactions, user, customCategories, 
                 {transaction.type === 'income' ? '+' : '-'}{formatMoney(transaction.amount)}
               </span>
               <div className="transaction-actions">
-                <button onClick={() => setEditing({ ...transaction })} className="icon-button" title="Editar" aria-label={`Editar ${transaction.description}`}><ActionIcon type="edit" /></button>
+                <button
+                  onClick={() => setEditing({
+                    ...transaction,
+                    category: getPreferredCategoryName(
+                      transaction.category,
+                      transaction.type === 'income' ? BASE_INCOME_CATEGORIES : BASE_EXPENSE_CATEGORIES
+                    )
+                  })}
+                  className="icon-button"
+                  title="Editar"
+                  aria-label={`Editar ${transaction.description}`}
+                >
+                  <ActionIcon type="edit" />
+                </button>
                 <button onClick={() => handleDuplicate(transaction)} className="icon-button" title="Duplicar" aria-label={`Duplicar ${transaction.description}`}><ActionIcon type="duplicate" /></button>
                 <button onClick={() => handleDelete(transaction.id)} className="icon-button delete" title="Borrar" aria-label={`Borrar ${transaction.description}`}><ActionIcon type="delete" /></button>
               </div>

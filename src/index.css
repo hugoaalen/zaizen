@@ -455,13 +455,7 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-bg) 12%, transparent);
 }
 
-.auth-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.auth-label-row button,
+.auth-forgot-button,
 .auth-switch button,
 .auth-back-button {
   border: 0;
@@ -1125,6 +1119,18 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   border-radius: 11px;
   background: var(--bg-card);
   cursor: pointer;
+}
+
+.auth-password-field {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-forgot-button {
+  justify-self: end;
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .recurring-always-active input {

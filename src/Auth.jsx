@@ -226,25 +226,31 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
             )}
 
             {isPasswordMode && (
-              <label>
-                <span className="auth-label-row">
+              <div className="auth-password-field">
+                <label>
                   Contraseña
-                  {mode === 'login' && (
-                    <button type="button" onClick={() => changeMode('forgot')}>¿La has olvidado?</button>
-                  )}
-                </span>
-                <input
-                  className="input-minimal"
-                  type="password"
-                  name="password"
-                  minLength="6"
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  placeholder="Mínimo 6 caracteres"
-                  required
-                  value={password}
-                  onChange={event => setPassword(event.target.value)}
-                />
-              </label>
+                  <input
+                    className="input-minimal"
+                    type="password"
+                    name="password"
+                    minLength="6"
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    placeholder="Mínimo 6 caracteres"
+                    required
+                    value={password}
+                    onChange={event => setPassword(event.target.value)}
+                  />
+                </label>
+                {mode === 'login' && (
+                  <button
+                    className="auth-forgot-button"
+                    type="button"
+                    onClick={() => changeMode('forgot')}
+                  >
+                    ¿La has olvidado?
+                  </button>
+                )}
+              </div>
             )}
 
             {mode === 'update' && (

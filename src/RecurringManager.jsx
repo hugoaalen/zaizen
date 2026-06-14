@@ -7,6 +7,7 @@ import {
   RECURRING_FREQUENCIES
 } from './recurringUtils'
 import DateField from './DateField'
+import { getPreferredCategoryName, mergeCategoryNames } from './categoryUtils'
 
 const createInitialForm = () => ({
   amount: '',
@@ -58,8 +59,8 @@ export default function RecurringManager({ user, customCategories }) {
       .map(c => c.name)
 
     return form.type === 'expense'
-      ? [...new Set([...BASE_EXPENSE_CATEGORIES, ...userCats])]
-      : [...new Set([...BASE_INCOME_CATEGORIES, ...userCats])]
+      ? mergeCategoryNames(BASE_EXPENSE_CATEGORIES, userCats)
+      : mergeCategoryNames(BASE_INCOME_CATEGORIES, userCats)
   }
 
   const updateForm = (field, value) => {
@@ -100,12 +101,16 @@ export default function RecurringManager({ user, customCategories }) {
   }
 
   const editSub = subscription => {
+    const preferredCategories = subscription.type === 'income'
+      ? BASE_INCOME_CATEGORIES
+      : BASE_EXPENSE_CATEGORIES
+
     setEditingId(subscription.id)
     setForm({
       amount: String(subscription.amount),
       description: subscription.description,
       type: subscription.type,
-      category: subscription.category || 'Varios',
+      category: getPreferredCategoryName(subscription.category, preferredCategories),
       frequency: subscription.frequency || (subscription.month ? 'yearly' : 'monthly'),
       chargeDay: String(subscription.charge_day || 1),
       alwaysActive: subscription.start_date === '2000-01-01' && !subscription.end_date,

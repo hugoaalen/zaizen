@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
+import { cleanCategoryName, normalizeCategoryKey } from './categoryUtils'
 
 export default function CategorySettings({ user, onCategoryChanged }) {
   const [newCat, setNewCat] = useState('')
@@ -35,16 +37,30 @@ export default function CategorySettings({ user, onCategoryChanged }) {
 
   const addCategory = async (e) => {
     e.preventDefault()
-    if (!newCat) return
+    const categoryName = cleanCategoryName(newCat)
+    if (!categoryName) return
     setErrorMessage('')
-    
+
+    const baseCategories = type === 'expense' ? BASE_EXPENSE_CATEGORIES : BASE_INCOME_CATEGORIES
+    const duplicate = [...baseCategories, ...categories
+      .filter(category => category.type === type)
+      .map(category => category.name)]
+      .find(category => normalizeCategoryKey(category) === normalizeCategoryKey(categoryName))
+
+    if (duplicate) {
+      setErrorMessage(`La categoría “${duplicate}” ya existe para ${type === 'expense' ? 'gastos' : 'ingresos'}.`)
+      return
+    }
+
     const { error } = await supabase.from('custom_categories').insert([
-      { user_id: user.id, name: newCat, type: type }
+      { user_id: user.id, name: categoryName, type }
     ])
     
     if (error) {
       console.error("Error detallado:", error)
-      setErrorMessage(`No se pudo guardar: ${error.message}`)
+      setErrorMessage(error.code === '23505'
+        ? 'Ya existe una categoría con ese nombre y tipo.'
+        : `No se pudo guardar: ${error.message}`)
     } else {
       setNewCat('')
       fetchCategories()

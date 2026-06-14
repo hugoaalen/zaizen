@@ -10,6 +10,7 @@ import {
   parseCsv
   , suggestRulePattern
 } from './csvImportUtils'
+import { getPreferredCategoryName, mergeCategoryNames } from './categoryUtils'
 
 const readBankFile = async (file) => {
   const bytes = await file.arrayBuffer()
@@ -29,14 +30,14 @@ export default function BankCsvImporter({ user, customCategories, onImported, on
   const [loading, setLoading] = useState(false)
 
   const categoriesByType = useMemo(() => ({
-    expense: [...new Set([
-      ...BASE_EXPENSE_CATEGORIES,
-      ...(customCategories || []).filter(category => category.type === 'expense').map(category => category.name)
-    ])],
-    income: [...new Set([
-      ...BASE_INCOME_CATEGORIES,
-      ...(customCategories || []).filter(category => category.type === 'income').map(category => category.name)
-    ])]
+    expense: mergeCategoryNames(
+      BASE_EXPENSE_CATEGORIES,
+      (customCategories || []).filter(category => category.type === 'expense').map(category => category.name)
+    ),
+    income: mergeCategoryNames(
+      BASE_INCOME_CATEGORIES,
+      (customCategories || []).filter(category => category.type === 'income').map(category => category.name)
+    )
   }), [customCategories])
 
   const hasRequiredMapping = mapping.date && mapping.description &&
@@ -149,7 +150,7 @@ export default function BankCsvImporter({ user, customCategories, onImported, on
       description: row.description,
       amount: row.amount,
       type: row.type,
-      category: row.category || 'Varios'
+      category: getPreferredCategoryName(row.category, categoriesByType[row.type])
     }))
     const learnedRows = selectedRows.filter(row => row.learnRule && row.rulePattern)
     const { error } = await supabase.from('transactions').insert(payload)
@@ -163,7 +164,7 @@ export default function BankCsvImporter({ user, customCategories, onImported, on
           {
             user_id: user.id,
             pattern: row.rulePattern,
-            category: row.category,
+            category: getPreferredCategoryName(row.category, categoriesByType[row.type]),
             transaction_type: row.type,
             updated_at: new Date().toISOString()
           }
@@ -310,14 +311,14 @@ export default function BankCsvImporter({ user, customCategories, onImported, on
                     </select>
                     <select
                       className="input-minimal import-category"
-                      value={row.category}
+                      value={getPreferredCategoryName(row.category, categoriesByType[row.type])}
                       onChange={event => updateRow(row.sourceIndex, {
                         category: event.target.value,
                         learnRule: true,
                         rulePattern: suggestRulePattern(row.description)
                       })}
                     >
-                      {[...new Set([row.category, ...categoriesByType[row.type]])].map(category => <option key={category} value={category}>{category}</option>)}
+                      {mergeCategoryNames(categoriesByType[row.type], [row.category]).map(category => <option key={category} value={category}>{category}</option>)}
                     </select>
                     <strong className={row.type === 'income' ? 'amount-income' : 'amount-expense'}>
                       {row.type === 'income' ? '+' : '-'}{Number(row.amount).toFixed(2)} €

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES } from './constants'
+import { mergeCategoryNames, normalizeCategoryKey } from './categoryUtils'
 
 export default function BudgetManager({
   user,
@@ -16,10 +17,10 @@ export default function BudgetManager({
   const [loading, setLoading] = useState(false)
 
   const expenseCategories = useMemo(
-    () => [...new Set([
-      ...BASE_EXPENSE_CATEGORIES,
-      ...(customCategories || []).filter(c => c.type === 'expense').map(c => c.name)
-    ])],
+    () => mergeCategoryNames(
+      BASE_EXPENSE_CATEGORIES,
+      (customCategories || []).filter(c => c.type === 'expense').map(c => c.name)
+    ),
     [customCategories]
   )
 
@@ -27,7 +28,7 @@ export default function BudgetManager({
     return transactions
       .filter(t => t.type === 'expense')
       .reduce((totals, transaction) => {
-        const transactionCategory = transaction.category || 'Varios'
+        const transactionCategory = normalizeCategoryKey(transaction.category || 'Varios')
         totals[transactionCategory] = (totals[transactionCategory] || 0) + Number(transaction.amount)
         return totals
       }, {})
@@ -140,7 +141,7 @@ export default function BudgetManager({
 
       <div className="budget-list">
         {budgets.map(budget => {
-          const spent = spentByCategory[budget.category] || 0
+          const spent = spentByCategory[normalizeCategoryKey(budget.category)] || 0
           const limit = Number(budget.amount)
           const percentage = limit > 0 ? Math.round((spent / limit) * 100) : 0
           const barPercentage = Math.min(percentage, 100)

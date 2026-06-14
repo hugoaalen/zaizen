@@ -5,6 +5,7 @@ import DatePicker, { registerLocale } from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { es } from 'date-fns/locale/es'
 import { toDatabaseDate } from './dateUtils'
+import { mergeCategoryNames, normalizeCategoryKey } from './categoryUtils'
 
 registerLocale('es', es)
 
@@ -31,12 +32,12 @@ export default function ExpenseForm({
       .map(c => c.name)
 
     // 2. Mezclamos nuestras constantes con las del usuario (evitando duplicados con Set)
-    return type === 'expense' 
-      ? [...new Set([...BASE_EXPENSE_CATEGORIES, ...userCats])] 
-      : [...new Set([...BASE_INCOME_CATEGORIES, ...userCats])]
+    return type === 'expense'
+      ? mergeCategoryNames(BASE_EXPENSE_CATEGORIES, userCats)
+      : mergeCategoryNames(BASE_INCOME_CATEGORIES, userCats)
   }
 
-  const normalize = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const normalize = normalizeCategoryKey
 
   const handleDescriptionChange = (e) => {
     const val = e.target.value

@@ -11,6 +11,8 @@ import {
   XAxis,
   YAxis
 } from 'recharts'
+import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
+import { groupTransactionsByCategory } from './categoryUtils'
 
 const PALETTES = {
   normal: {
@@ -26,18 +28,6 @@ const PALETTES = {
     expense: ['#7c3aed', '#ec407a', '#ff8f00', '#1e88e5', '#e53935', '#ff6d00', '#00bfa5', '#fdd835', '#8bc34a', '#ab47bc']
   }
 }
-
-const groupByCategory = (transactions, type) =>
-  transactions
-    .filter(transaction => transaction.type === type)
-    .reduce((groups, transaction) => {
-      const category = transaction.category || 'Varios'
-      const existing = groups.find(item => item.name === category)
-      if (existing) existing.value += Number(transaction.amount)
-      else groups.push({ name: category, value: Number(transaction.amount) })
-      return groups
-    }, [])
-    .sort((a, b) => b.value - a.value)
 
 const formatMoney = value => new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -63,7 +53,8 @@ export default function ExpenseChart({
   const [flow, setFlow] = useState('expense')
   const palette = PALETTES[chartStyle.palette] || PALETTES.normal
   const isBar = chartStyle.type === 'barras'
-  const data = groupByCategory(transactions, flow)
+  const preferredCategories = flow === 'income' ? BASE_INCOME_CATEGORIES : BASE_EXPENSE_CATEGORIES
+  const data = groupTransactionsByCategory(transactions, flow, preferredCategories)
   const colors = flow === 'income' ? palette.income : palette.expense
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
