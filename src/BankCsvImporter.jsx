@@ -11,6 +11,13 @@ import {
   , suggestRulePattern
 } from './csvImportUtils'
 import { getPreferredCategoryName, mergeCategoryNames } from './categoryUtils'
+import {
+  MAX_CATEGORY_LENGTH,
+  MAX_CSV_FILE_BYTES,
+  MAX_CSV_ROWS,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_FINANCIAL_AMOUNT
+} from './securityUtils'
 
 const readBankFile = async (file) => {
   const bytes = await file.arrayBuffer()
@@ -61,9 +68,25 @@ export default function BankCsvImporter({ user, customCategories, onImported, on
     if (!file) return
 
     setStatus('')
-    const parsed = parseCsv(await readBankFile(file))
+    if (file.size > MAX_CSV_FILE_BYTES) {
+      setStatus('El archivo supera el límite de 5 MB.')
+      return
+    }
+
+    let parsed
+    try {
+      parsed = parseCsv(await readBankFile(file))
+    } catch {
+      setStatus('No se pudo leer el archivo seleccionado.')
+      return
+    }
+
     if (!parsed.headers.length || !parsed.rows.length) {
       setStatus('No se encontraron movimientos en el archivo.')
+      return
+    }
+    if (parsed.rows.length > MAX_CSV_ROWS) {
+      setStatus(`El archivo contiene más de ${MAX_CSV_ROWS} movimientos. Divídelo en varios archivos.`)
       return
     }
 
@@ -90,7 +113,13 @@ export default function BankCsvImporter({ user, customCategories, onImported, on
 
     const mappedRows = flagDateOutliers(
       applyCategorizationRules(mapCsvRows(sourceRows, mapping, { expenseSign }), learnedRules)
-    )
+    ).map(row => {
+      const errors = [...row.errors]
+      if (row.description.length > MAX_DESCRIPTION_LENGTH) errors.push('Descripción demasiado larga')
+      if (row.category.length > MAX_CATEGORY_LENGTH) errors.push('Categoría demasiado larga')
+      if (row.amount > MAX_FINANCIAL_AMOUNT) errors.push('Importe demasiado alto')
+      return { ...row, errors, selected: errors.length === 0 && row.selected }
+    })
     const datedRows = mappedRows.filter(row => row.date)
     const dates = datedRows.map(row => row.date).sort()
     let existingFingerprints = new Set()

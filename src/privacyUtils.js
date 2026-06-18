@@ -7,7 +7,8 @@ const CSV_COLUMNS = [
 ]
 
 const escapeCsvValue = value => {
-  const text = String(value ?? '')
+  const rawText = String(value ?? '')
+  const text = /^[=+\-@\t\r]/.test(rawText) ? `'${rawText}` : rawText
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 

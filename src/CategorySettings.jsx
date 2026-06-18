@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import { cleanCategoryName, normalizeCategoryKey } from './categoryUtils'
+import { MAX_CATEGORY_LENGTH } from './securityUtils'
 
 export default function CategorySettings({ user, onCategoryChanged }) {
   const [newCat, setNewCat] = useState('')
@@ -57,10 +58,9 @@ export default function CategorySettings({ user, onCategoryChanged }) {
     ])
     
     if (error) {
-      console.error("Error detallado:", error)
       setErrorMessage(error.code === '23505'
         ? 'Ya existe una categoría con ese nombre y tipo.'
-        : `No se pudo guardar: ${error.message}`)
+        : 'No se pudo guardar la categoría. Revisa el nombre.')
     } else {
       setNewCat('')
       fetchCategories()
@@ -100,6 +100,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
           <input
             className="input-minimal"
             placeholder="Ej: Gimnasio"
+            maxLength={MAX_CATEGORY_LENGTH}
             value={newCat}
             onChange={e => setNewCat(e.target.value)}
             required

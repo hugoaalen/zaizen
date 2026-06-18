@@ -45,3 +45,16 @@ test('creates dated export filenames', () => {
     'zaizen-movimientos-2026-06-12.csv'
   )
 })
+
+test('neutralizes spreadsheet formulas in CSV exports', () => {
+  const csv = transactionsToCsv([{
+    date: '2026-06-12',
+    description: '=HYPERLINK("https://example.com")',
+    type: 'expense',
+    category: '+SUM(A1:A2)',
+    amount: 12.5
+  }])
+
+  assert.match(csv, /'=HYPERLINK/)
+  assert.match(csv, /'\+SUM\(A1:A2\)/)
+})

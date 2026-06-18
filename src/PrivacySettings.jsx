@@ -5,6 +5,7 @@ import {
   createExportFilename,
   transactionsToCsv
 } from './privacyUtils'
+import { clearOfflineData } from './offlineCache'
 
 const EXPORT_TABLES = [
   'transactions',
@@ -61,7 +62,8 @@ export default function PrivacySettings({ user }) {
       )
       setMessage({ type: 'success', text: `${data?.length || 0} movimientos exportados.` })
     } catch (error) {
-      setMessage({ type: 'error', text: `No se pudo crear el CSV: ${error.message}` })
+      console.error('Error al exportar CSV:', error)
+      setMessage({ type: 'error', text: 'No se pudo crear el CSV.' })
     } finally {
       setLoadingAction('')
     }
@@ -86,7 +88,8 @@ export default function PrivacySettings({ user }) {
       )
       setMessage({ type: 'success', text: 'Copia completa descargada correctamente.' })
     } catch (error) {
-      setMessage({ type: 'error', text: `No se pudo crear la copia: ${error.message}` })
+      console.error('Error al crear la copia:', error)
+      setMessage({ type: 'error', text: 'No se pudo crear la copia completa.' })
     } finally {
       setLoadingAction('')
     }
@@ -99,11 +102,18 @@ export default function PrivacySettings({ user }) {
 
     const { error } = await supabase.rpc('delete_own_account')
     if (error) {
-      setMessage({ type: 'error', text: `No se pudo eliminar la cuenta: ${error.message}` })
+      const requiresRecentLogin = error.message?.includes('Recent authentication required')
+      setMessage({
+        type: 'error',
+        text: requiresRecentLogin
+          ? 'Por seguridad, cierra sesión, vuelve a entrar y repite la eliminación durante los próximos 15 minutos.'
+          : 'No se pudo eliminar la cuenta.'
+      })
       setLoadingAction('')
       return
     }
 
+    clearOfflineData(user.id)
     await supabase.auth.signOut()
   }
 

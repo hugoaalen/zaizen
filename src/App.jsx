@@ -3,9 +3,11 @@ import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import Dashboard from './Dashboard'
 import PwaStatus from './PwaStatus'
+import { clearAllOfflineData } from './offlineCache'
 
 function App() {
   const [session, setSession] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
   const [recoveryMode, setRecoveryMode] = useState(
     () => window.location.hash.includes('type=recovery')
   )
@@ -27,13 +29,22 @@ function App() {
   }, [theme])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => setSession(session))
+      .finally(() => setAuthReady(true))
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
+      if (event === 'SIGNED_OUT') clearAllOfflineData()
       setSession(session)
+      setAuthReady(true)
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (authReady && !session && !recoveryMode) clearAllOfflineData()
+  }, [authReady, recoveryMode, session])
 
   useEffect(() => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -51,7 +62,7 @@ function App() {
 
   return (
     <div>
-      {!session || recoveryMode ?
+      {!authReady ? null : !session || recoveryMode ?
         <Auth
           recoveryMode={recoveryMode}
           onRecoveryComplete={() => setRecoveryMode(false)}

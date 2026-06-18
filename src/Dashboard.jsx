@@ -22,6 +22,7 @@ import {
   RecurringIcon
 } from './SettingsIcons'
 import {
+  clearOfflineData,
   getMonthlyCachePeriod,
   loadOfflineData,
   saveOfflineData
@@ -195,7 +196,11 @@ export default function Dashboard({ session, theme, setTheme }) {
     }
   }
 
-  const handleLogout = async () => await supabase.auth.signOut()
+  const handleLogout = async () => {
+    clearOfflineData(session.user.id)
+    const { error } = await supabase.auth.signOut()
+    if (error) setErrorMessage('No se pudo cerrar la sesión correctamente.')
+  }
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
   const goToCurrentMonth = () => {
     const today = new Date()

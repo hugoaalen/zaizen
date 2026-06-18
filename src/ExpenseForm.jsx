@@ -6,6 +6,10 @@ import "react-datepicker/dist/react-datepicker.css"
 import { es } from 'date-fns/locale/es'
 import { toDatabaseDate } from './dateUtils'
 import { mergeCategoryNames, normalizeCategoryKey } from './categoryUtils'
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_FINANCIAL_AMOUNT
+} from './securityUtils'
 
 registerLocale('es', es)
 
@@ -114,7 +118,7 @@ export default function ExpenseForm({
 
           <label style={{ flex: '1 1 120px', color: 'var(--text-muted)', fontSize: '14px' }}>
             Importe (€)
-            <input className="input-minimal" type="number" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            <input className="input-minimal" type="number" min="0.01" max={MAX_FINANCIAL_AMOUNT} step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           </label>
 
           <div style={{ flex: '1 1 150px', color: 'var(--text-muted)', fontSize: '14px' }}>
@@ -136,6 +140,7 @@ export default function ExpenseForm({
             <input 
               className="input-minimal" 
               type="text" 
+              maxLength={MAX_DESCRIPTION_LENGTH}
               required 
               value={description} 
               onChange={handleDescriptionChange} 

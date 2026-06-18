@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import BrandIcon from './BrandIcon'
+import {
+  getSafeAuthError,
+  MIN_PASSWORD_LENGTH
+} from './securityUtils'
 
 const AUTH_COPY = {
   login: {
@@ -24,7 +28,7 @@ const AUTH_COPY = {
   update: {
     eyebrow: 'Nueva contraseña',
     title: 'Protege de nuevo tu cuenta.',
-    description: 'Elige una contraseña nueva de al menos seis caracteres.',
+    description: `Elige una contraseña nueva de al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
     submit: 'Guardar contraseña'
   }
 }
@@ -75,10 +79,7 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
           }
         })
         if (error) throw error
-        setMessage({
-          type: 'success',
-          text: 'Cuenta creada. Revisa tu correo para confirmar el registro.'
-        })
+        setMessage({ type: 'success', text: 'Cuenta creada. Revisa tu correo para confirmar el registro.' })
       }
 
       if (mode === 'login') {
@@ -93,7 +94,7 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
         if (error) throw error
         setMessage({
           type: 'success',
-          text: 'Enlace enviado. Revisa también la carpeta de correo no deseado.'
+          text: 'Si existe una cuenta con ese email, recibirás un enlace. Revisa también el correo no deseado.'
         })
       }
 
@@ -108,7 +109,8 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
         onRecoveryComplete?.()
       }
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      console.error('Error de autenticación:', error)
+      setMessage({ type: 'error', text: getSafeAuthError(mode) })
     } finally {
       setLoading(false)
     }
@@ -122,7 +124,8 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
       options: { redirectTo: window.location.origin }
     })
     if (error) {
-      setMessage({ type: 'error', text: error.message })
+      console.error('Error de OAuth:', error)
+      setMessage({ type: 'error', text: 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.' })
       setLoading(false)
     }
   }
@@ -202,6 +205,7 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
                   name="fullName"
                   autoComplete="name"
                   placeholder="Tu nombre"
+                  maxLength="100"
                   required
                   value={fullName}
                   onChange={event => setFullName(event.target.value)}
@@ -218,6 +222,7 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
                   name="email"
                   autoComplete="email"
                   placeholder="tu@email.com"
+                  maxLength="254"
                   required
                   value={email}
                   onChange={event => setEmail(event.target.value)}
@@ -233,9 +238,10 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
                     className="input-minimal"
                     type="password"
                     name="password"
-                    minLength="6"
+                    minLength={mode === 'login' ? 1 : MIN_PASSWORD_LENGTH}
+                    maxLength="128"
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={mode === 'login' ? 'Tu contraseña' : `Mínimo ${MIN_PASSWORD_LENGTH} caracteres`}
                     required
                     value={password}
                     onChange={event => setPassword(event.target.value)}
@@ -260,7 +266,8 @@ export default function Auth({ recoveryMode = false, onRecoveryComplete }) {
                   className="input-minimal"
                   type="password"
                   name="confirmPassword"
-                  minLength="6"
+                  minLength={MIN_PASSWORD_LENGTH}
+                  maxLength="128"
                   autoComplete="new-password"
                   placeholder="Repite tu nueva contraseña"
                   required

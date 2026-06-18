@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'zaizen-shell-v3'
+const CACHE_VERSION = 'zaizen-shell-v4'
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -51,6 +51,12 @@ self.addEventListener('fetch', event => {
     )
     return
   }
+
+  const isStaticAsset = url.pathname.startsWith('/assets/')
+    || url.pathname.startsWith('/icons/')
+    || url.pathname === '/manifest.webmanifest'
+
+  if (!isStaticAsset) return
 
   event.respondWith(
     caches.match(request).then(cached => {

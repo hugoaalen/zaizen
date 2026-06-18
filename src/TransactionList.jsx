@@ -7,6 +7,10 @@ import {
   mergeCategoryNames,
   normalizeCategoryKey
 } from './categoryUtils'
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_FINANCIAL_AMOUNT
+} from './securityUtils'
 
 const normalizeSearchText = (value) =>
   value
@@ -238,11 +242,11 @@ export default function TransactionList({ transactions, user, customCategories, 
           <form className="modal-card" onSubmit={handleSave} onMouseDown={event => event.stopPropagation()}>
             <h3>Editar movimiento</h3>
             <label>Descripción
-              <input className="input-minimal" required value={editing.description} onChange={event => setEditing({ ...editing, description: event.target.value })} />
+              <input className="input-minimal" maxLength={MAX_DESCRIPTION_LENGTH} required value={editing.description} onChange={event => setEditing({ ...editing, description: event.target.value })} />
             </label>
             <div className="edit-grid">
               <label>Importe
-                <input className="input-minimal" type="number" min="0.01" step="0.01" required value={editing.amount} onChange={event => setEditing({ ...editing, amount: event.target.value })} />
+                <input className="input-minimal" type="number" min="0.01" max={MAX_FINANCIAL_AMOUNT} step="0.01" required value={editing.amount} onChange={event => setEditing({ ...editing, amount: event.target.value })} />
               </label>
               <label>Fecha
                 <input className="input-minimal" type="date" required value={editing.date} onChange={event => setEditing({ ...editing, date: event.target.value })} />

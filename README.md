@@ -81,9 +81,9 @@ En navegadores compatibles también puede aparecer dentro de ZaiZen el aviso
 ## Desarrollo local
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 cp .env.example .env
-npm run dev
+pnpm run dev
 ```
 
 Configura en `.env` las credenciales públicas del proyecto Supabase:
@@ -103,18 +103,34 @@ supabase db push
 ## Comprobaciones
 
 ```bash
-npm run lint
-npm test
-npm run build
+pnpm run check
+pnpm run security:audit
 ```
 
 El Service Worker solo se registra en el build de producción. Para probar la PWA
 localmente:
 
 ```bash
-npm run build
-npm run preview
+pnpm run build
+pnpm run preview
 ```
+
+## Seguridad
+
+- Utiliza exclusivamente la clave pública `anon` o `sb_publishable_` de
+  Supabase en variables `VITE_*`. Nunca uses `service_role` ni `sb_secret_` en
+  el navegador.
+- Los datos están protegidos mediante RLS y permisos mínimos para el rol
+  `authenticated`. Aplica todas las migraciones antes de desplegar.
+- Los movimientos guardados para consulta offline se eliminan al cerrar sesión
+  o cuando la sesión deja de ser válida.
+- Las exportaciones CSV neutralizan fórmulas y las importaciones bancarias
+  limitan tamaño, filas, longitudes e importes.
+- Vercel sirve CSP, HSTS, protección contra iframes y políticas restrictivas de
+  permisos del navegador.
+
+Consulta [SECURITY.md](./SECURITY.md) para configurar Supabase Auth, verificar
+producción y comunicar vulnerabilidades.
 
 ## Contribución
 

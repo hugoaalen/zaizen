@@ -8,6 +8,10 @@ import {
 } from './recurringUtils'
 import DateField from './DateField'
 import { getPreferredCategoryName, mergeCategoryNames } from './categoryUtils'
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_FINANCIAL_AMOUNT
+} from './securityUtils'
 
 const createInitialForm = () => ({
   amount: '',
@@ -93,7 +97,7 @@ export default function RecurringManager({ user, customCategories }) {
       : supabase.from('subscriptions').insert([payload])
     const { error } = await query
     if (error) {
-      setErrorMessage(`No se pudo guardar el movimiento recurrente: ${error.message}`)
+      setErrorMessage('No se pudo guardar el movimiento recurrente. Revisa los datos.')
       return
     }
     resetForm()
@@ -158,11 +162,11 @@ export default function RecurringManager({ user, customCategories }) {
       <form onSubmit={addSub} className="settings-form recurring-form">
         <label className="wide-field">
           Nombre
-          <input className="input-minimal" name="description" placeholder="Ej: Alquiler" value={form.description} onChange={e => updateForm('description', e.target.value)} required />
+          <input className="input-minimal" name="description" maxLength={MAX_DESCRIPTION_LENGTH} placeholder="Ej: Alquiler" value={form.description} onChange={e => updateForm('description', e.target.value)} required />
         </label>
         <label>
           Importe
-          <input className="input-minimal" name="amount" type="number" min="0.01" step="0.01" placeholder="0,00 €" value={form.amount} onChange={e => updateForm('amount', e.target.value)} required />
+          <input className="input-minimal" name="amount" type="number" min="0.01" max={MAX_FINANCIAL_AMOUNT} step="0.01" placeholder="0,00 €" value={form.amount} onChange={e => updateForm('amount', e.target.value)} required />
         </label>
         <label>
           Tipo

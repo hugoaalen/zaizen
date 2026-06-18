@@ -16,7 +16,7 @@ export const suggestRulePattern = description => {
     .replace(/\b\d{5,}\b/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-  return clean.split(' ').filter(Boolean).slice(0, 2).join(' ')
+  return clean.split(' ').filter(Boolean).slice(0, 2).join(' ').slice(0, 120).trim()
 }
 
 export const applyCategorizationRules = (rows, rules = []) => {

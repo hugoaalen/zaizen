@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES } from './constants'
 import { mergeCategoryNames, normalizeCategoryKey } from './categoryUtils'
+import { MAX_FINANCIAL_AMOUNT } from './securityUtils'
 
 export default function BudgetManager({
   user,
@@ -126,6 +127,7 @@ export default function BudgetManager({
           className="input-minimal"
           type="number"
           min="0.01"
+          max={MAX_FINANCIAL_AMOUNT}
           step="0.01"
           placeholder="Límite €"
           required

@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { getGoalProgress } from './savingsGoalUtils'
 import DateField from './DateField'
+import {
+  MAX_FINANCIAL_AMOUNT,
+  MAX_GOAL_NAME_LENGTH
+} from './securityUtils'
 
 const formatMoney = value => new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -76,7 +80,7 @@ export default function SavingsGoals({ user }) {
       target_date: String(formData.get('targetDate') || '')
     })
 
-    if (error) setErrorMessage(`No se pudo crear el objetivo: ${error.message}`)
+    if (error) setErrorMessage('No se pudo crear el objetivo. Revisa los datos.')
     else {
       setName('')
       setTargetAmount('')
@@ -98,7 +102,7 @@ export default function SavingsGoals({ user }) {
       amount
     })
 
-    if (error) setErrorMessage(`No se pudo registrar la aportación: ${error.message}`)
+    if (error) setErrorMessage('No se pudo registrar la aportación. Revisa el importe.')
     else {
       setContributionAmounts(current => ({ ...current, [goalId]: '' }))
       await loadGoals()
@@ -128,6 +132,7 @@ export default function SavingsGoals({ user }) {
             className="input-minimal"
             name="goalName"
             placeholder="Ej: Viaje a Japón"
+            maxLength={MAX_GOAL_NAME_LENGTH}
             value={name}
             onChange={event => setName(event.target.value)}
             required
@@ -140,6 +145,7 @@ export default function SavingsGoals({ user }) {
             name="targetAmount"
             type="number"
             min="0.01"
+            max={MAX_FINANCIAL_AMOUNT}
             step="0.01"
             placeholder="3000 €"
             value={targetAmount}

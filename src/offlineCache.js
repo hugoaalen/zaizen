@@ -1,4 +1,5 @@
 const CACHE_PREFIX = 'zaizen:offline:v1'
+const ALL_CACHE_PREFIXES = ['zaizen:offline:']
 
 const getStorage = () => {
   try {
@@ -37,6 +38,27 @@ export const loadOfflineData = (userId, resource, period) => {
     return null
   }
 }
+
+const removeMatchingKeys = predicate => {
+  const storage = getStorage()
+  if (!storage) return false
+
+  try {
+    const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
+    keys.filter(key => key && predicate(key)).forEach(key => storage.removeItem(key))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export const clearOfflineData = userId =>
+  removeMatchingKeys(key => ALL_CACHE_PREFIXES.some(prefix =>
+    key.startsWith(prefix) && key.split(':')[3] === String(userId)
+  ))
+
+export const clearAllOfflineData = () =>
+  removeMatchingKeys(key => ALL_CACHE_PREFIXES.some(prefix => key.startsWith(prefix)))
 
 export const getMonthlyCachePeriod = (year, month) =>
   `${year}-${String(month).padStart(2, '0')}`
