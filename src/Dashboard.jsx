@@ -455,36 +455,20 @@ export default function Dashboard({ session, theme, setTheme }) {
           </CollapsibleSection>
 
           <div className="dashboard-content-grid">
-            <div className="dashboard-content-column">
-              <CollapsibleSection
-                title="Presupuestos"
-                description="Límites y consumo por categoría"
-                storageKey="dashboardBudgetsOpen"
-                className="dashboard-grid-budget"
-              >
-                <BudgetManager
-                  user={session.user}
-                  transactions={transactions}
-                  customCategories={customCategories}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Actividad"
-                description="Movimientos recientes del periodo"
-                storageKey="dashboardHistoryOpen"
-                className="dashboard-grid-activity"
-              >
-                <TransactionList
-                  transactions={transactions}
-                  user={session.user}
-                  customCategories={customCategories}
-                  onTransactionDeleted={fetchTransactions}
-                />
-              </CollapsibleSection>
-            </div>
+            <CollapsibleSection
+              title="Presupuestos"
+              description="Límites y consumo por categoría"
+              storageKey="dashboardBudgetsOpen"
+              className="dashboard-grid-budget"
+            >
+              <BudgetManager
+                user={session.user}
+                transactions={transactions}
+                customCategories={customCategories}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+              />
+            </CollapsibleSection>
 
             <CollapsibleSection
               title="Análisis"
@@ -495,6 +479,20 @@ export default function Dashboard({ session, theme, setTheme }) {
               <Suspense fallback={<p className="loading-state">Cargando gráfico...</p>}>
                 <ExpenseChart transactions={transactions} chartStyle={{ type: chartTypeMonthly, palette: chartPalette }} />
               </Suspense>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Actividad"
+              description="Movimientos recientes del periodo"
+              storageKey="dashboardHistoryOpen"
+              className="dashboard-grid-activity"
+            >
+              <TransactionList
+                transactions={transactions}
+                user={session.user}
+                customCategories={customCategories}
+                onTransactionDeleted={fetchTransactions}
+              />
             </CollapsibleSection>
           </div>
         </main>

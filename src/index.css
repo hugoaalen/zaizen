@@ -2348,16 +2348,24 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 
 .dashboard-content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "budget analysis"
+    "activity activity";
   gap: 18px;
   align-items: start;
 }
 
-.dashboard-content-column {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 18px;
+.dashboard-grid-budget {
+  grid-area: budget;
+}
+
+.dashboard-grid-analysis {
+  grid-area: analysis;
+}
+
+.dashboard-grid-activity {
+  grid-area: activity;
 }
 
 /* Savings goals */
@@ -3283,10 +3291,6 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
       "budget"
       "analysis"
       "activity";
-  }
-
-  .dashboard-content-column {
-    display: contents;
   }
 
   .dashboard-grid-budget {
