@@ -7,6 +7,11 @@ import {
   MAX_GOAL_NAME_LENGTH
 } from './securityUtils'
 
+const GOALS_WITH_CONTRIBUTIONS = `
+  *,
+  savings_contributions!savings_contributions_goal_user_fkey(*)
+`
+
 const formatMoney = value => new Intl.NumberFormat('es-ES', {
   style: 'currency',
   currency: 'EUR'
@@ -30,7 +35,7 @@ export default function SavingsGoals({ user }) {
   const loadGoals = async () => {
     const { data, error } = await supabase
       .from('savings_goals')
-      .select('*, savings_contributions(*)')
+      .select(GOALS_WITH_CONTRIBUTIONS)
       .eq('user_id', user.id)
       .order('target_date')
 
@@ -49,7 +54,7 @@ export default function SavingsGoals({ user }) {
     const fetchGoals = async () => {
       const { data, error } = await supabase
         .from('savings_goals')
-        .select('*, savings_contributions(*)')
+        .select(GOALS_WITH_CONTRIBUTIONS)
         .eq('user_id', user.id)
         .order('target_date')
 
