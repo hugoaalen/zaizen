@@ -14,6 +14,11 @@
   --btn-hover: #4338ca;
   --btn-text: #ffffff;
   --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  --density-gap: 18px;
+  --density-section-padding: 20px;
+  --density-header-x: 20px;
+  --density-header-y: 18px;
+  --density-control-height: 43px;
   
   /* Colores fijos para finanzas */
   --color-income: #10b981;
@@ -31,6 +36,47 @@
   --btn-bg: #6366f1;
   --btn-hover: #4f46e5;
   --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+[data-accent='purple'] {
+  --btn-bg: #6366f1;
+  --btn-hover: #4f46e5;
+}
+
+[data-accent='blue'] {
+  --btn-bg: #2563eb;
+  --btn-hover: #1d4ed8;
+}
+
+[data-accent='green'] {
+  --btn-bg: #059669;
+  --btn-hover: #047857;
+}
+
+[data-accent='rose'] {
+  --btn-bg: #e11d48;
+  --btn-hover: #be123c;
+}
+
+[data-accent='orange'] {
+  --btn-bg: #ea580c;
+  --btn-hover: #c2410c;
+}
+
+[data-density='compact'] {
+  --density-gap: 12px;
+  --density-section-padding: 15px;
+  --density-header-x: 17px;
+  --density-header-y: 14px;
+  --density-control-height: 39px;
+}
+
+[data-density='comfortable'] {
+  --density-gap: 24px;
+  --density-section-padding: 25px;
+  --density-header-x: 25px;
+  --density-header-y: 22px;
+  --density-control-height: 47px;
 }
 
 /* 3. Estilos Base */
@@ -139,7 +185,7 @@ body {
   overflow: hidden;
   color: #f8fafc;
   background:
-    radial-gradient(circle at 14% 18%, rgba(99, 102, 241, 0.55), transparent 32%),
+    radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--btn-bg) 55%, transparent), transparent 32%),
     radial-gradient(circle at 86% 74%, rgba(16, 185, 129, 0.2), transparent 28%),
     linear-gradient(145deg, #101229 0%, #171936 48%, #0d1021 100%);
 }
@@ -1300,7 +1346,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .appearance-group {
-  padding: 22px;
+  padding: var(--density-section-padding);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -1318,11 +1364,15 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 
 .segmented-control {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
   padding: 5px;
   border-radius: 12px;
   background: var(--input-bg);
+}
+
+.segmented-control.two-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented-control button {
@@ -1367,6 +1417,42 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   border-color: var(--btn-bg);
   color: var(--text-main);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--btn-bg) 18%, transparent);
+}
+
+.accent-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.accent-options button {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 5px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.accent-options button.active {
+  border-color: var(--btn-bg);
+  color: var(--text-main);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--btn-bg) 12%, transparent);
+}
+
+.accent-options i {
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, white 70%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 
 /* Export and privacy */
@@ -2135,7 +2221,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 .dashboard-main {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--density-gap);
 }
 
 .dashboard-toolbar {
@@ -2161,7 +2247,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 .year-stepper {
   display: flex;
   align-items: center;
-  height: 43px;
+  height: var(--density-control-height);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--bg-card);
@@ -2183,14 +2269,14 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .current-month-button {
-  height: 43px;
+  height: var(--density-control-height);
 }
 
 .quick-action {
   display: flex;
   align-items: center;
   gap: 7px;
-  height: 43px;
+  height: var(--density-control-height);
   padding: 0 14px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -2352,7 +2438,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   grid-template-areas:
     "budget analysis"
     "activity activity";
-  gap: 18px;
+  gap: var(--density-gap);
   align-items: start;
 }
 
@@ -2370,7 +2456,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 
 /* Savings goals */
 .savings-goals {
-  padding: 20px;
+  padding: var(--density-section-padding);
 }
 
 .savings-goal-form {
@@ -2572,7 +2658,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 18px 20px;
+  padding: var(--density-header-y) var(--density-header-x);
   border: 0;
   background: var(--bg-card);
   color: var(--text-main);
@@ -2634,7 +2720,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .compact-chart {
-  padding: 20px;
+  padding: var(--density-section-padding);
 }
 
 .compact-chart-header,
@@ -2686,6 +2772,51 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   width: 100%;
   height: 300px;
   min-width: 0;
+}
+
+.treemap-chart {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.treemap-canvas {
+  width: 100%;
+  height: 310px;
+  min-width: 0;
+}
+
+.treemap-total {
+  display: flex;
+  min-width: 150px;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+  background: var(--input-bg);
+}
+
+.treemap-total span,
+.treemap-total small {
+  color: var(--text-muted);
+}
+
+.treemap-total span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.treemap-total strong {
+  margin: 7px 0 3px;
+  font-size: 20px;
+}
+
+.treemap-total small {
+  font-size: 11px;
 }
 
 .chart-tooltip {
@@ -2995,7 +3126,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .compact-history {
-  padding: 22px;
+  padding: var(--density-section-padding);
 }
 
 .compact-history-heading {
@@ -3503,6 +3634,18 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
     margin-top: 2px;
   }
 
+  .treemap-chart {
+    grid-template-columns: 1fr;
+  }
+
+  .treemap-canvas {
+    height: 260px;
+  }
+
+  .treemap-total {
+    min-width: 0;
+  }
+
   .donut-visual {
     height: 220px;
   }
@@ -3529,7 +3672,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   }
 
   .compact-history {
-    padding: 14px;
+    padding: var(--density-section-padding);
   }
 
   .compact-history-heading {

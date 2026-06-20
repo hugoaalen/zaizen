@@ -10,12 +10,13 @@ web y puede instalarse como aplicación en iOS, Android y escritorio.
 
 - Dashboard mensual con balance, ingresos, gastos, tasa de ahorro, comparativas
   con el mes anterior y proyección mensual de gasto.
-- Vista anual con resumen, evolución mensual y gráficos configurables.
+- Vista anual con resumen, evolución mensual y gráficos de barras, líneas o
+  área.
 - Registro, edición, duplicado y eliminación de ingresos y gastos.
 - Búsqueda de movimientos sin distinguir mayúsculas ni tildes, además de filtros
   por tipo y categoría.
-- Distribución por categorías mediante gráficos circulares o de barras, paletas
-  visuales configurables y tooltips detallados.
+- Distribución por categorías mediante gráficos circulares, de barras o mosaico,
+  paletas visuales configurables y tooltips detallados.
 - Presupuestos mensuales por categoría con seguimiento del consumo.
 - Objetivos de ahorro con importe objetivo, fecha límite, progreso, aportaciones
   y recomendación mensual.
@@ -33,6 +34,8 @@ web y puede instalarse como aplicación en iOS, Android y escritorio.
 - Exportación de movimientos en CSV y copia completa de los datos en JSON.
 - Eliminación segura de la cuenta y sus datos desde el apartado de privacidad.
 - Temas claro y oscuro, diseño adaptable a móvil y panel de ajustes.
+- Preferencias visuales sincronizadas entre dispositivos para tema, paleta y
+  tipos de gráfico, color principal, densidad y vista inicial.
 - PWA instalable con icono propio, caché de la aplicación, indicador de conexión
   y consulta offline de los últimos datos mensuales guardados.
 

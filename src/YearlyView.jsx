@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -44,6 +46,11 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
 
   const colorIncome = palette === 'pastel' ? '#4ade80' : palette === 'vibrante' ? '#00c853' : 'var(--color-income)'
   const colorExpense = palette === 'pastel' ? '#f87171' : palette === 'vibrante' ? '#ff1744' : 'var(--color-expense)'
+  const chartLabel = chartType === 'lineas'
+    ? 'Líneas'
+    : chartType === 'area'
+      ? 'Área'
+      : 'Barras'
 
   useEffect(() => {
     let active = true
@@ -165,7 +172,7 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
             <h3>Evolución mensual</h3>
             <p>Ingresos y gastos registrados durante {selectedYear}.</p>
           </div>
-          <span>{chartType === 'lineas' ? 'Líneas' : 'Barras'}</span>
+          <span>{chartLabel}</span>
         </header>
         <div className="yearly-chart-canvas">
           <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 900, height: 360 }}>
@@ -175,6 +182,22 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
                 <Line type="monotone" dataKey="ingresos" stroke={colorIncome} strokeWidth={3} dot={{ fill: colorIncome, strokeWidth: 0 }} name="Ingresos" />
                 <Line type="monotone" dataKey="gastos" stroke={colorExpense} strokeWidth={3} dot={{ fill: colorExpense, strokeWidth: 0 }} name="Gastos" />
               </LineChart>
+            ) : chartType === 'area' ? (
+              <AreaChart {...chartProps}>
+                <defs>
+                  <linearGradient id="annualIncomeArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={colorIncome} stopOpacity={0.38} />
+                    <stop offset="95%" stopColor={colorIncome} stopOpacity={0.03} />
+                  </linearGradient>
+                  <linearGradient id="annualExpenseArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={colorExpense} stopOpacity={0.34} />
+                    <stop offset="95%" stopColor={colorExpense} stopOpacity={0.03} />
+                  </linearGradient>
+                </defs>
+                {chartContent}
+                <Area type="monotone" dataKey="ingresos" stroke={colorIncome} strokeWidth={3} fill="url(#annualIncomeArea)" name="Ingresos" />
+                <Area type="monotone" dataKey="gastos" stroke={colorExpense} strokeWidth={3} fill="url(#annualExpenseArea)" name="Gastos" />
+              </AreaChart>
             ) : (
               <BarChart {...chartProps}>
                 {chartContent}

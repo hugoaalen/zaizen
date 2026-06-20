@@ -14,7 +14,8 @@ const EXPORT_TABLES = [
   'budgets',
   'categorization_rules',
   'savings_goals',
-  'savings_contributions'
+  'savings_contributions',
+  'user_preferences'
 ]
 
 const triggerDownload = (content, filename, type) => {

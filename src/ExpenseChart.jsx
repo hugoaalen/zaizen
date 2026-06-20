@@ -7,6 +7,7 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
+  Treemap,
   Tooltip,
   XAxis,
   YAxis
@@ -46,6 +47,42 @@ function CategoryTooltip({ active, payload, label }) {
   )
 }
 
+function TreemapNode({ x, y, width, height, name, value, index = 0, colors, total, darkText, depth }) {
+  if (depth === 0) return null
+
+  const safeName = String(name || 'Sin categoría')
+  const showName = width >= 72 && height >= 42
+  const showPercentage = width >= 72 && height >= 62
+  const maxCharacters = Math.max(5, Math.floor(width / 9))
+  const visibleName = safeName.length > maxCharacters
+    ? `${safeName.slice(0, Math.max(2, maxCharacters - 1))}…`
+    : safeName
+  const textColor = darkText ? '#111827' : '#ffffff'
+
+  return (
+    <g>
+      <rect
+        x={x + 2}
+        y={y + 2}
+        width={Math.max(0, width - 4)}
+        height={Math.max(0, height - 4)}
+        rx="9"
+        fill={colors[index % colors.length]}
+      />
+      {showName && (
+        <text x={x + 12} y={y + 23} fill={textColor} fontSize="12" fontWeight="700">
+          {visibleName}
+        </text>
+      )}
+      {showPercentage && (
+        <text x={x + 12} y={y + 43} fill={textColor} fillOpacity="0.78" fontSize="11">
+          {Math.round((value / total) * 100)}%
+        </text>
+      )}
+    </g>
+  )
+}
+
 export default function ExpenseChart({
   transactions,
   chartStyle = { type: 'circular', palette: 'normal' }
@@ -53,6 +90,7 @@ export default function ExpenseChart({
   const [flow, setFlow] = useState('expense')
   const palette = PALETTES[chartStyle.palette] || PALETTES.normal
   const isBar = chartStyle.type === 'barras'
+  const isTreemap = chartStyle.type === 'mosaico'
   const preferredCategories = flow === 'income' ? BASE_INCOME_CATEGORIES : BASE_EXPENSE_CATEGORIES
   const data = groupTransactionsByCategory(transactions, flow, preferredCategories)
   const colors = flow === 'income' ? palette.income : palette.expense
@@ -92,6 +130,33 @@ export default function ExpenseChart({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      ) : isTreemap ? (
+        <div className="treemap-chart">
+          <div className="treemap-canvas">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 310 }}>
+              <Treemap
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                stroke="none"
+                content={(
+                  <TreemapNode
+                    colors={colors}
+                    total={total}
+                    darkText={chartStyle.palette === 'pastel'}
+                  />
+                )}
+              >
+                <Tooltip content={<CategoryTooltip />} />
+              </Treemap>
+            </ResponsiveContainer>
+          </div>
+          <div className="treemap-total">
+            <span>Total {flow === 'income' ? 'ingresos' : 'gastos'}</span>
+            <strong>{formatMoney(total)}</strong>
+            <small>{data.length} {data.length === 1 ? 'categoría' : 'categorías'}</small>
+          </div>
         </div>
       ) : (
         <div className="donut-chart">

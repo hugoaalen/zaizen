@@ -60,27 +60,31 @@ const loadMonthlyTransactions = async (userId, year, month) => {
   ])
 }
 
-export default function Dashboard({ session, theme, setTheme }) {
+export default function Dashboard({ session, preferences, updatePreferences }) {
   const online = useOnlineStatus()
-  const [view, setView] = useState('monthly')
+  const [view, setView] = useState(preferences.initialView)
   const [transactions, setTransactions] = useState([])
   const [previousTransactions, setPreviousTransactions] = useState([])
   const [customCategories, setCustomCategories] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
   const [rulesRefreshKey, setRulesRefreshKey] = useState(0)
 
-  const [chartTypeMonthly, setChartTypeMonthly] = useState(() => localStorage.getItem('chartTypeMonthly') || 'circular')
-  const [chartTypeYearly, setChartTypeYearly] = useState(() => localStorage.getItem('chartTypeYearly') || 'barras')
-  const [chartPalette, setChartPalette] = useState(() => localStorage.getItem('chartPalette') || 'normal')
+  const chartTypeMonthly = preferences.monthlyChart
+  const chartTypeYearly = preferences.yearlyChart
+  const chartPalette = preferences.chartPalette
+  const theme = preferences.theme
+  const accentColor = preferences.accentColor
+  const density = preferences.density
+  const initialView = preferences.initialView
 
   const [showSettings, setShowSettings] = useState(false)
   const [newTransactionType, setNewTransactionType] = useState(null)
   const closeSettings = useCallback(() => setShowSettings(false), [])
   const closeTransactionModal = useCallback(() => setNewTransactionType(null), [])
 
-  const persistMonthlyType = (v) => { setChartTypeMonthly(v); localStorage.setItem('chartTypeMonthly', v) }
-  const persistYearlyType = (v) => { setChartTypeYearly(v); localStorage.setItem('chartTypeYearly', v) }
-  const persistPalette = (v) => { setChartPalette(v); localStorage.setItem('chartPalette', v) }
+  const persistMonthlyType = value => updatePreferences({ monthlyChart: value })
+  const persistYearlyType = value => updatePreferences({ yearlyChart: value })
+  const persistPalette = value => updatePreferences({ chartPalette: value })
 
   const hoy = new Date()
   const [selectedMonth, setSelectedMonth] = useState(hoy.getMonth() + 1)
@@ -201,7 +205,7 @@ export default function Dashboard({ session, theme, setTheme }) {
     const { error } = await supabase.auth.signOut()
     if (error) setErrorMessage('No se pudo cerrar la sesión correctamente.')
   }
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
+  const toggleTheme = () => updatePreferences({ theme: theme === 'light' ? 'dark' : 'light' })
   const goToCurrentMonth = () => {
     const today = new Date()
     setSelectedMonth(today.getMonth() + 1)
@@ -256,7 +260,7 @@ export default function Dashboard({ session, theme, setTheme }) {
           <div className="settings-section-heading">
             <div>
               <h3>Visualización</h3>
-              <p>Elige cómo quieres leer tus datos.</p>
+              <p>Elige cómo quieres leer tus datos. Se sincroniza entre dispositivos.</p>
             </div>
           </div>
 
@@ -265,6 +269,7 @@ export default function Dashboard({ session, theme, setTheme }) {
             <div className="segmented-control">
               <button className={chartTypeMonthly === 'circular' ? 'active' : ''} onClick={() => persistMonthlyType('circular')}>Circular</button>
               <button className={chartTypeMonthly === 'barras' ? 'active' : ''} onClick={() => persistMonthlyType('barras')}>Barras</button>
+              <button className={chartTypeMonthly === 'mosaico' ? 'active' : ''} onClick={() => persistMonthlyType('mosaico')}>Mosaico</button>
             </div>
           </div>
 
@@ -273,6 +278,7 @@ export default function Dashboard({ session, theme, setTheme }) {
             <div className="segmented-control">
               <button className={chartTypeYearly === 'barras' ? 'active' : ''} onClick={() => persistYearlyType('barras')}>Barras</button>
               <button className={chartTypeYearly === 'lineas' ? 'active' : ''} onClick={() => persistYearlyType('lineas')}>Líneas</button>
+              <button className={chartTypeYearly === 'area' ? 'active' : ''} onClick={() => persistYearlyType('area')}>Área</button>
             </div>
           </div>
 
@@ -295,6 +301,45 @@ export default function Dashboard({ session, theme, setTheme }) {
                   {option.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="appearance-group">
+            <span>Color principal</span>
+            <div className="accent-options">
+              {[
+                { id: 'purple', label: 'Morado', color: '#6366f1' },
+                { id: 'blue', label: 'Azul', color: '#2563eb' },
+                { id: 'green', label: 'Verde', color: '#059669' },
+                { id: 'rose', label: 'Rosa', color: '#e11d48' },
+                { id: 'orange', label: 'Naranja', color: '#ea580c' }
+              ].map(option => (
+                <button
+                  key={option.id}
+                  className={accentColor === option.id ? 'active' : ''}
+                  onClick={() => updatePreferences({ accentColor: option.id })}
+                >
+                  <i style={{ background: option.color }} />
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="appearance-group">
+            <span>Densidad de la interfaz</span>
+            <div className="segmented-control">
+              <button className={density === 'compact' ? 'active' : ''} onClick={() => updatePreferences({ density: 'compact' })}>Compacta</button>
+              <button className={density === 'normal' ? 'active' : ''} onClick={() => updatePreferences({ density: 'normal' })}>Normal</button>
+              <button className={density === 'comfortable' ? 'active' : ''} onClick={() => updatePreferences({ density: 'comfortable' })}>Cómoda</button>
+            </div>
+          </div>
+
+          <div className="appearance-group">
+            <span>Vista al iniciar</span>
+            <div className="segmented-control two-options">
+              <button className={initialView === 'monthly' ? 'active' : ''} onClick={() => updatePreferences({ initialView: 'monthly' })}>Mes</button>
+              <button className={initialView === 'yearly' ? 'active' : ''} onClick={() => updatePreferences({ initialView: 'yearly' })}>Año</button>
             </div>
           </div>
         </section>

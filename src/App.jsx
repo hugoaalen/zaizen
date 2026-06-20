@@ -1,32 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import Dashboard from './Dashboard'
 import PwaStatus from './PwaStatus'
 import { clearAllOfflineData } from './offlineCache'
+import {
+  loadLocalPreferences,
+  preferencesFromRow,
+  preferencesToRow,
+  sanitizePreferences,
+  saveLocalPreferences
+} from './preferencesUtils'
 
 function App() {
   const [session, setSession] = useState(null)
   const [authReady, setAuthReady] = useState(false)
+  const [preferences, setPreferences] = useState(loadLocalPreferences)
+  const preferencesRef = useRef(preferences)
+  const userId = session?.user?.id
   const [recoveryMode, setRecoveryMode] = useState(
     () => window.location.hash.includes('type=recovery')
   )
   
-  const [theme, setTheme] = useState(() => {
-  // 1. ¿Hay algo guardado de antes? Úsalo.
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) return savedTheme;
-
-  // 2. Si no hay nada, pregunta al sistema operativo:
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
-  });
-
-  // Aplica el tema al HTML cada vez que cambie
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [theme])
+    preferencesRef.current = preferences
+    document.documentElement.setAttribute('data-theme', preferences.theme)
+    document.documentElement.setAttribute('data-accent', preferences.accentColor)
+    document.documentElement.setAttribute('data-density', preferences.density)
+    saveLocalPreferences(preferences)
+  }, [preferences])
 
   useEffect(() => {
     supabase.auth.getSession()
@@ -47,18 +49,61 @@ function App() {
   }, [authReady, recoveryMode, session])
 
   useEffect(() => {
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  
-  const handleChange = (e) => {
-    // Solo cambiamos automáticamente si el usuario no ha fijado un tema a mano
-    if (!localStorage.getItem('theme')) {
-      setTheme(e.matches ? 'dark' : 'light');
-    }
-  };
+    if (!userId) return
+    let active = true
 
-  mediaQuery.addEventListener('change', handleChange);
-  return () => mediaQuery.removeEventListener('change', handleChange);
-}, []);
+    const loadPreferences = async () => {
+      const localPreferences = preferencesRef.current
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('theme,monthly_chart,yearly_chart,chart_palette,accent_color,density,initial_view')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (!active) return
+
+      if (error) {
+        console.error('No se pudieron sincronizar las preferencias:', error)
+        return
+      }
+
+      if (data) {
+        const remotePreferences = preferencesFromRow(data)
+        preferencesRef.current = remotePreferences
+        setPreferences(remotePreferences)
+        return
+      }
+
+      const { error: insertError } = await supabase
+        .from('user_preferences')
+        .upsert(preferencesToRow(userId, localPreferences), { onConflict: 'user_id' })
+
+      if (insertError) console.error('No se pudieron crear las preferencias:', insertError)
+    }
+
+    loadPreferences()
+    return () => { active = false }
+  }, [userId])
+
+  const updatePreferences = useCallback((patch) => {
+    const nextPreferences = sanitizePreferences({
+      ...preferencesRef.current,
+      ...patch
+    })
+
+    preferencesRef.current = nextPreferences
+    setPreferences(nextPreferences)
+    saveLocalPreferences(nextPreferences)
+
+    if (userId) {
+      supabase
+        .from('user_preferences')
+        .upsert(preferencesToRow(userId, nextPreferences), { onConflict: 'user_id' })
+        .then(({ error }) => {
+          if (error) console.error('No se pudieron guardar las preferencias:', error)
+        })
+    }
+  }, [userId])
 
   return (
     <div>
@@ -67,8 +112,11 @@ function App() {
           recoveryMode={recoveryMode}
           onRecoveryComplete={() => setRecoveryMode(false)}
         /> :
-        /* Pasamos la función de cambiar tema al Dashboard */
-        <Dashboard session={session} theme={theme} setTheme={setTheme} />
+        <Dashboard
+          session={session}
+          preferences={preferences}
+          updatePreferences={updatePreferences}
+        />
       }
       <PwaStatus />
     </div>
