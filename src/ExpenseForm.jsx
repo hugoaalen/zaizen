@@ -100,8 +100,8 @@ export default function ExpenseForm({
     <div className="transaction-form">
       <form onSubmit={handleSubmit}>
         
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label style={{ flex: '1 1 120px', color: 'var(--text-muted)', fontSize: '14px' }}>
+        <div className="transaction-form-grid transaction-form-grid-primary">
+          <label>
             Tipo
             <select 
               className="input-minimal" 
@@ -116,12 +116,12 @@ export default function ExpenseForm({
             </select>
           </label>
 
-          <label style={{ flex: '1 1 120px', color: 'var(--text-muted)', fontSize: '14px' }}>
+          <label>
             Importe (€)
             <input className="input-minimal" type="number" min="0.01" max={MAX_FINANCIAL_AMOUNT} step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           </label>
 
-          <div style={{ flex: '1 1 150px', color: 'var(--text-muted)', fontSize: '14px' }}>
+          <div className="transaction-date-field">
             Fecha
             <DatePicker
               selected={startDate}
@@ -134,8 +134,8 @@ export default function ExpenseForm({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label style={{ flex: '2 1 200px', color: 'var(--text-muted)', fontSize: '14px' }}>
+        <div className="transaction-form-grid transaction-form-grid-secondary">
+          <label>
             Descripción
             <input 
               className="input-minimal" 
@@ -148,7 +148,7 @@ export default function ExpenseForm({
             />
           </label>
 
-          <label style={{ flex: '1 1 150px', color: 'var(--text-muted)', fontSize: '14px' }}>
+          <label>
             Categoría
             <select className="input-minimal" value={category} onChange={(e) => setCategory(e.target.value)}>
               {getAvailableCategories().map(c => (

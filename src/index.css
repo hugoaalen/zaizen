@@ -2194,7 +2194,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  min-width: 210px;
+  width: min(100%, 270px);
   margin-bottom: 20px;
   padding: 4px;
   border: 1px solid var(--border-color);
@@ -2203,6 +2203,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .dashboard-view-tabs button {
+  min-height: 38px;
   padding: 9px 22px;
   border: 0;
   border-radius: 9px;
@@ -2239,7 +2240,8 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .period-selector .input-minimal {
-  width: 150px;
+  width: 170px;
+  height: var(--density-control-height);
   margin: 0;
   background: var(--bg-card);
 }
@@ -2247,6 +2249,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 .year-stepper {
   display: flex;
   align-items: center;
+  min-width: 138px;
   height: var(--density-control-height);
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -2269,7 +2272,14 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 }
 
 .current-month-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: var(--density-control-height);
+  min-width: 64px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-weight: 700;
 }
 
 .quick-action {
@@ -3397,6 +3407,36 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   gap: 20px;
 }
 
+.transaction-form-grid {
+  display: grid;
+  align-items: end;
+  gap: 15px;
+}
+
+.transaction-form-grid-primary {
+  grid-template-columns: minmax(130px, 0.8fr) minmax(170px, 1fr) minmax(190px, 1.15fr);
+}
+
+.transaction-form-grid-secondary {
+  grid-template-columns: minmax(260px, 1.45fr) minmax(190px, 1fr);
+}
+
+.transaction-form-grid label,
+.transaction-date-field {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.transaction-form-grid .input-minimal,
+.transaction-date-field .input-minimal {
+  min-height: 45px;
+}
+
+.transaction-date-field {
+  display: block;
+}
+
 .transaction-form .modal-actions .btn-minimal {
   width: auto;
 }
@@ -3751,6 +3791,11 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 
   .transaction-modal {
     max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 20px);
+  }
+
+  .transaction-form-grid-primary,
+  .transaction-form-grid-secondary {
+    grid-template-columns: 1fr;
   }
 
   .transaction-modal > header,
