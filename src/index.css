@@ -2257,12 +2257,19 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) 40px;
   align-items: center;
-  width: 270px;
+  width: 264px;
   height: var(--density-control-height);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-card);
+  border: 1px solid color-mix(in srgb, var(--btn-bg) 22%, var(--border-color));
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--bg-card), color-mix(in srgb, var(--btn-bg) 7%, var(--bg-card)));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.month-stepper:focus-within {
+  border-color: var(--btn-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-bg) 18%, transparent), 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .month-stepper button {
@@ -2272,30 +2279,34 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   place-items: center;
   border: 0;
   background: transparent;
-  color: var(--text-main);
+  color: var(--btn-bg);
   cursor: pointer;
-  font-size: 25px;
+  font-size: 27px;
+  font-weight: 500;
   line-height: 1;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .month-stepper button:hover,
 .year-stepper button:hover {
-  background: var(--input-bg);
+  background: color-mix(in srgb, var(--btn-bg) 12%, transparent);
+  color: var(--text-main);
 }
 
 .month-stepper .input-minimal {
   width: 100%;
   height: var(--density-control-height);
-  padding-top: 0;
-  padding-bottom: 0;
+  padding: 0 8px;
   margin: 0;
   border: 0;
-  border-left: 1px solid var(--border-color);
-  border-right: 1px solid var(--border-color);
   border-radius: 0;
+  background-image: none;
   background-color: transparent;
-  font-size: 15px;
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 700;
   line-height: var(--density-control-height);
+  text-align: center;
 }
 
 .year-stepper {
