@@ -2253,13 +2253,47 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   gap: 8px;
 }
 
-.period-selector .input-minimal {
-  width: 170px;
+.month-stepper {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  width: 270px;
+  height: var(--density-control-height);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.month-stepper button {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.month-stepper button:hover,
+.year-stepper button:hover {
+  background: var(--input-bg);
+}
+
+.month-stepper .input-minimal {
+  width: 100%;
   height: var(--density-control-height);
   padding-top: 0;
   padding-bottom: 0;
   margin: 0;
-  background: var(--bg-card);
+  border: 0;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  background-color: transparent;
   font-size: 15px;
   line-height: var(--density-control-height);
 }
@@ -3521,10 +3555,10 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 
   .period-selector {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
-  .period-selector .input-minimal {
+  .month-stepper {
     width: 100%;
   }
 

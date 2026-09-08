@@ -211,6 +211,20 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
     setSelectedMonth(today.getMonth() + 1)
     setSelectedYear(today.getFullYear())
   }
+  const shiftMonth = offset => {
+    setSelectedMonth(month => {
+      const nextMonth = month + offset
+      if (nextMonth < 1) {
+        setSelectedYear(year => year - 1)
+        return 12
+      }
+      if (nextMonth > 12) {
+        setSelectedYear(year => year + 1)
+        return 1
+      }
+      return nextMonth
+    })
+  }
 
   const settingsSections = [
     {
@@ -460,9 +474,13 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
 
           <section className="dashboard-toolbar">
             <div className="period-selector">
-              <select className="input-minimal" value={selectedMonth} onChange={event => setSelectedMonth(Number(event.target.value))} aria-label="Mes">
-                {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
+              <div className="month-stepper">
+                <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">‹</button>
+                <select className="input-minimal" value={selectedMonth} onChange={event => setSelectedMonth(Number(event.target.value))} aria-label="Mes">
+                  {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+                <button type="button" onClick={() => shiftMonth(1)} aria-label="Mes siguiente">›</button>
+              </div>
               <div className="year-stepper">
                 <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior">‹</button>
                 <span style={{ fontWeight: '700' }}>{selectedYear}</span>
