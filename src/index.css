@@ -2259,17 +2259,10 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   align-items: center;
   width: 264px;
   height: var(--density-control-height);
-  border: 1px solid color-mix(in srgb, var(--btn-bg) 22%, var(--border-color));
-  border-radius: 13px;
-  background: linear-gradient(135deg, var(--bg-card), color-mix(in srgb, var(--btn-bg) 7%, var(--bg-card)));
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
   overflow: hidden;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.month-stepper:focus-within {
-  border-color: var(--btn-bg);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-bg) 18%, transparent), 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .month-stepper button {
@@ -2277,13 +2270,15 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   width: 100%;
   height: 100%;
   place-items: center;
+  padding: 0;
   border: 0;
   background: transparent;
-  color: var(--btn-bg);
+  color: var(--text-main);
   cursor: pointer;
-  font-size: 27px;
+  font-family: system-ui, sans-serif;
+  font-size: 25px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 0;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -2305,8 +2300,9 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   color: var(--text-main);
   font-size: 16px;
   font-weight: 700;
-  line-height: var(--density-control-height);
+  line-height: normal;
   text-align: center;
+  text-align-last: center;
 }
 
 .year-stepper {
@@ -2331,7 +2327,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   color: var(--text-main);
   cursor: pointer;
   font-size: 24px;
-  line-height: 1;
+  line-height: 0;
 }
 
 .year-stepper span,
