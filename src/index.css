@@ -2275,11 +2275,13 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   background: transparent;
   color: var(--text-main);
   cursor: pointer;
-  font-family: system-ui, sans-serif;
-  font-size: 25px;
-  font-weight: 500;
-  line-height: 0;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.stepper-chevron {
+  display: block;
+  width: 18px;
+  height: 22px;
 }
 
 .month-stepper button:hover,
@@ -2326,8 +2328,6 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   background: transparent;
   color: var(--text-main);
   cursor: pointer;
-  font-size: 24px;
-  line-height: 0;
 }
 
 .year-stepper span,

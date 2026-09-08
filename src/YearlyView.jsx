@@ -15,6 +15,7 @@ import {
 } from 'recharts'
 import { supabase } from './supabaseClient'
 import { getMonthIndex } from './dateUtils'
+import ChevronIcon from './ChevronIcon'
 
 const formatMoney = value => new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -129,9 +130,9 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
         </div>
         <div className="yearly-period">
           <div className="year-stepper">
-            <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior">‹</button>
+            <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior"><ChevronIcon /></button>
             <strong>{selectedYear}</strong>
-            <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente">›</button>
+            <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente"><ChevronIcon direction="right" /></button>
           </div>
           {selectedYear !== currentYear && (
             <button className="btn-outline" type="button" onClick={() => setSelectedYear(currentYear)}>Este año</button>

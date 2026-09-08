@@ -29,6 +29,7 @@ import {
 } from './offlineCache'
 import { useOnlineStatus } from './useOnlineStatus'
 import BrandIcon from './BrandIcon'
+import ChevronIcon from './ChevronIcon'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -475,16 +476,16 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
           <section className="dashboard-toolbar">
             <div className="period-selector">
               <div className="month-stepper">
-                <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">‹</button>
+                <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior"><ChevronIcon /></button>
                 <select className="input-minimal" value={selectedMonth} onChange={event => setSelectedMonth(Number(event.target.value))} aria-label="Mes">
                   {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
-                <button type="button" onClick={() => shiftMonth(1)} aria-label="Mes siguiente">›</button>
+                <button type="button" onClick={() => shiftMonth(1)} aria-label="Mes siguiente"><ChevronIcon direction="right" /></button>
               </div>
               <div className="year-stepper">
-                <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior">‹</button>
+                <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior"><ChevronIcon /></button>
                 <span style={{ fontWeight: '700' }}>{selectedYear}</span>
-                <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente">›</button>
+                <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente"><ChevronIcon direction="right" /></button>
               </div>
               <button className="btn-outline current-month-button" onClick={goToCurrentMonth}>Hoy</button>
             </div>
