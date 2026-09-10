@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES } from './constants'
 import { mergeCategoryNames, normalizeCategoryKey } from './categoryUtils'
@@ -14,6 +14,7 @@ export default function BudgetManager({
   const [budgets, setBudgets] = useState([])
   const [category, setCategory] = useState('Comida')
   const [amount, setAmount] = useState('')
+  const [recurring, setRecurring] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -35,79 +36,133 @@ export default function BudgetManager({
       }, {})
   }, [transactions])
 
-  const loadBudgets = async () => {
-    const { data, error } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('year', selectedYear)
-      .eq('month', selectedMonth)
-      .order('category')
-
-    if (error) {
-      setErrorMessage('Presupuestos requieren aplicar la migración de Supabase incluida en el proyecto.')
-      setBudgets([])
-    } else {
-      setErrorMessage('')
-      setBudgets(data)
-    }
-  }
-
-  useEffect(() => {
-    let active = true
-    const load = async () => {
-      const { data, error } = await supabase
+  const loadBudgets = useCallback(async () => {
+    const [budgetResult, recurringResult] = await Promise.all([
+      supabase
         .from('budgets')
         .select('*')
         .eq('user_id', user.id)
         .eq('year', selectedYear)
         .eq('month', selectedMonth)
+        .order('category'),
+      supabase
+        .from('recurring_budgets')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('active', true)
         .order('category')
+    ])
+
+    if (budgetResult.error || recurringResult.error) {
+      setErrorMessage('Presupuestos requieren aplicar la migración de Supabase incluida en el proyecto.')
+      setBudgets([])
+    } else {
+      setErrorMessage('')
+      const currentBudgets = budgetResult.data || []
+      const recurring = recurringResult.data || []
+      const recurringByCategory = new Map(
+        recurring.map(item => [normalizeCategoryKey(item.category), item])
+      )
+      const currentByCategory = new Map(
+        currentBudgets.map(item => [normalizeCategoryKey(item.category), item])
+      )
+      const mergedBudgets = currentBudgets.map(item => ({
+        ...item,
+        is_recurring: recurringByCategory.has(normalizeCategoryKey(item.category)),
+        recurring_id: recurringByCategory.get(normalizeCategoryKey(item.category))?.id || null
+      }))
+
+      recurring.forEach(item => {
+        if (!currentByCategory.has(normalizeCategoryKey(item.category))) {
+          mergedBudgets.push({
+            ...item,
+            id: `recurring-${item.id}`,
+            recurring_id: item.id,
+            is_recurring: true,
+            year: selectedYear,
+            month: selectedMonth
+          })
+        }
+      })
+
+      mergedBudgets.sort((left, right) => left.category.localeCompare(right.category))
+      setBudgets(mergedBudgets)
+    }
+  }, [selectedMonth, selectedYear, user.id])
+
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      await loadBudgets()
       if (!active) return
-      if (error) {
-        setErrorMessage('Presupuestos requieren aplicar la migración de Supabase incluida en el proyecto.')
-        setBudgets([])
-      } else {
-        setErrorMessage('')
-        setBudgets(data)
-      }
     }
     load()
     return () => { active = false }
-  }, [selectedMonth, selectedYear, user.id])
+  }, [loadBudgets])
 
   const saveBudget = async (e) => {
     e.preventDefault()
     setLoading(true)
     setErrorMessage('')
 
-    const { error } = await supabase
-      .from('budgets')
-      .upsert({
+    const budgetPayload = {
         user_id: user.id,
         category,
         amount: Number(amount),
         month: selectedMonth,
         year: selectedYear
-      }, { onConflict: 'user_id,category,year,month' })
+    }
+
+    if (recurring) {
+      const { error: recurringError } = await supabase
+        .from('recurring_budgets')
+        .upsert({ user_id: user.id, category, amount: Number(amount), active: true }, { onConflict: 'user_id,category' })
+      if (recurringError) {
+        setErrorMessage('No se pudo guardar el límite recurrente.')
+        setLoading(false)
+        return
+      }
+    }
+
+    const { error } = await supabase
+      .from('budgets')
+      .upsert(budgetPayload, { onConflict: 'user_id,category,year,month' })
 
     if (error) setErrorMessage('No se pudo guardar el presupuesto.')
     else {
       setAmount('')
+      setRecurring(false)
       await loadBudgets()
     }
     setLoading(false)
   }
 
   const deleteBudget = async (id) => {
-    const { error } = await supabase
-      .from('budgets')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id)
+    const budget = budgets.find(item => item.id === id)
+    const confirmationMessage = budget?.recurring_id
+      ? `¿Eliminar el límite recurrente de ${budget.category}? Dejará de aparecer en futuros meses.`
+      : `¿Eliminar el límite de ${budget?.category || 'esta categoría'} de este mes?`
+    if (!window.confirm(confirmationMessage)) return
+
+    const isGeneratedBudget = String(id).startsWith('recurring-')
+    const { error } = isGeneratedBudget
+      ? { error: null }
+      : await supabase
+        .from('budgets')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
 
     if (error) setErrorMessage('No se pudo eliminar el presupuesto.')
-    else loadBudgets()
+    else if (budget?.recurring_id) {
+      const { error: recurringError } = await supabase
+        .from('recurring_budgets')
+        .delete()
+        .eq('id', budget.recurring_id)
+        .eq('user_id', user.id)
+      if (recurringError) setErrorMessage('Se eliminó este mes, pero no el límite recurrente.')
+      await loadBudgets()
+    } else loadBudgets()
   }
 
   return (
@@ -134,6 +189,10 @@ export default function BudgetManager({
           value={amount}
           onChange={e => setAmount(e.target.value)}
         />
+        <label className="budget-recurring-toggle">
+          <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
+          <span>Repetir este límite cada mes</span>
+        </label>
         <button className="btn-minimal" disabled={loading}>
           {loading ? 'Guardando...' : 'Guardar límite'}
         </button>
@@ -152,7 +211,10 @@ export default function BudgetManager({
           return (
             <article className="budget-item" key={budget.id}>
               <div className="budget-item-heading">
-                <strong>{budget.category}</strong>
+                <strong>
+                  {budget.category}
+                  {budget.is_recurring && <em className="budget-recurring-badge">Recurrente</em>}
+                </strong>
                 <span>{spent.toFixed(2)} € / {limit.toFixed(2)} €</span>
                 <button className="icon-button" onClick={() => deleteBudget(budget.id)} aria-label={`Eliminar presupuesto de ${budget.category}`}>×</button>
               </div>

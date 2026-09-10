@@ -42,6 +42,9 @@ export default function CategorizationRulesManager({ user, refreshKey = 0 }) {
   }, [refreshKey, user.id])
 
   const deleteRule = async (id) => {
+    const rule = rules.find(item => item.id === id)
+    if (!window.confirm(`¿Eliminar la regla para ${rule?.pattern || 'este comercio'}?`)) return
+
     const { error } = await supabase
       .from('categorization_rules')
       .delete()

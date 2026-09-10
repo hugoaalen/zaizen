@@ -137,6 +137,9 @@ export default function RecurringManager({ user, customCategories }) {
   }
 
   const deleteSub = async (id) => {
+    const subscription = subs.find(item => item.id === id)
+    if (!window.confirm(`¿Eliminar el movimiento recurrente ${subscription?.description || ''}?`)) return
+
     const { error } = await supabase
       .from('subscriptions')
       .delete()

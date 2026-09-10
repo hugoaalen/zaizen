@@ -70,6 +70,9 @@ export default function CategorySettings({ user, onCategoryChanged }) {
   }
 
   const deleteCategory = async (id) => {
+    const category = categories.find(item => item.id === id)
+    if (!window.confirm(`¿Eliminar la categoría ${category?.name || ''}?`)) return
+
     const { error } = await supabase
       .from('custom_categories')
       .delete()

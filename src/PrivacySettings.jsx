@@ -12,6 +12,7 @@ const EXPORT_TABLES = [
   'subscriptions',
   'custom_categories',
   'budgets',
+  'recurring_budgets',
   'categorization_rules',
   'savings_goals',
   'savings_contributions',

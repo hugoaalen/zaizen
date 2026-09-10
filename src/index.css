@@ -698,6 +698,20 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   border-color: var(--text-muted);
 }
 
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role='tab']:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--btn-bg) 72%, white);
+  outline-offset: 3px;
+}
+
+.input-minimal:focus-visible {
+  border-color: var(--btn-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-bg) 20%, transparent);
+}
+
 .btn-minimal {
   background-color: var(--btn-bg);
   color: var(--btn-text);
@@ -874,6 +888,37 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   width: auto;
 }
 
+.budget-recurring-toggle {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.budget-recurring-toggle input {
+  accent-color: var(--btn-bg);
+}
+
+.budget-item-heading strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-recurring-badge {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--btn-bg) 14%, transparent);
+  color: var(--btn-bg);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .budget-list {
   display: flex;
   flex-direction: column;
@@ -1043,6 +1088,15 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+}
+
+.settings-tabs button[aria-selected='false'] {
+  opacity: 0.82;
+}
+
+.settings-content:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--btn-bg) 72%, white);
+  outline-offset: -5px;
 }
 
 .settings-tabs button:hover {
@@ -1242,6 +1296,12 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   flex-direction: column;
 }
 
+.recurring-list {
+  gap: 10px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--input-bg) 35%, transparent);
+}
+
 .category-row,
 .recurring-row {
   display: grid;
@@ -1261,6 +1321,12 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   grid-template-areas:
     "dot content amount"
     ". status actions";
+  min-height: 92px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-body);
+  box-shadow: var(--shadow-card);
   transition: opacity 0.2s ease;
 }
 
@@ -1279,6 +1345,7 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
 .recurring-row > .amount-income,
 .recurring-row > .amount-expense {
   grid-area: amount;
+  align-self: start;
 }
 
 .recurring-status {
@@ -1304,8 +1371,13 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
   gap: 5px;
 }
 
-.category-row:last-child,
-.recurring-row:last-child {
+.recurring-row-actions .icon-button {
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--input-bg);
+}
+
+.category-row:last-child {
   border-bottom: 0;
 }
 
@@ -2022,6 +2094,11 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
     grid-template-columns: 1fr;
   }
 
+  .recurring-form {
+    gap: 14px;
+    padding: 18px;
+  }
+
   .recurring-form .wide-field,
   .recurring-form .recurring-form-actions {
     grid-column: auto;
@@ -2040,21 +2117,58 @@ input[type='date'].input-minimal::-webkit-date-and-time-value {
     width: 100%;
   }
 
+  .recurring-list {
+    gap: 10px;
+    padding: 12px;
+    background: color-mix(in srgb, var(--input-bg) 35%, transparent);
+  }
+
   .recurring-row {
     grid-template-columns: 8px minmax(0, 1fr) auto;
     grid-template-areas:
       "dot content amount"
-      ". status status"
-      ". actions actions";
+      "dot status actions";
+    gap: 10px;
+    min-height: 124px;
+    padding: 15px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .recurring-row-content strong {
+    font-size: 15px;
+  }
+
+  .recurring-row-content small {
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .recurring-row > .amount-income,
   .recurring-row > .amount-expense {
     grid-area: amount;
+    font-size: 14px;
+  }
+
+  .recurring-status {
+    align-self: end;
+    margin-top: 10px;
+    font-size: 11px;
   }
 
   .recurring-row-actions {
-    justify-content: flex-start;
+    align-self: end;
+    gap: 5px;
+  }
+
+  .recurring-row-actions .icon-button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    background: var(--input-bg);
   }
 
   .import-file-summary {
@@ -3953,4 +4067,15 @@ path,
 .recharts-wrapper *:focus {
   outline: none !important;
   -webkit-tap-highlight-color: transparent; /* Quita el destello azul en móviles también */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

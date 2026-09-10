@@ -282,18 +282,18 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
           <div className="appearance-group">
             <span>Gráfico mensual</span>
             <div className="segmented-control">
-              <button className={chartTypeMonthly === 'circular' ? 'active' : ''} onClick={() => persistMonthlyType('circular')}>Circular</button>
-              <button className={chartTypeMonthly === 'barras' ? 'active' : ''} onClick={() => persistMonthlyType('barras')}>Barras</button>
-              <button className={chartTypeMonthly === 'mosaico' ? 'active' : ''} onClick={() => persistMonthlyType('mosaico')}>Mosaico</button>
+              <button aria-pressed={chartTypeMonthly === 'circular'} className={chartTypeMonthly === 'circular' ? 'active' : ''} onClick={() => persistMonthlyType('circular')}>Circular</button>
+              <button aria-pressed={chartTypeMonthly === 'barras'} className={chartTypeMonthly === 'barras' ? 'active' : ''} onClick={() => persistMonthlyType('barras')}>Barras</button>
+              <button aria-pressed={chartTypeMonthly === 'mosaico'} className={chartTypeMonthly === 'mosaico' ? 'active' : ''} onClick={() => persistMonthlyType('mosaico')}>Mosaico</button>
             </div>
           </div>
 
           <div className="appearance-group">
             <span>Gráfico anual</span>
             <div className="segmented-control">
-              <button className={chartTypeYearly === 'barras' ? 'active' : ''} onClick={() => persistYearlyType('barras')}>Barras</button>
-              <button className={chartTypeYearly === 'lineas' ? 'active' : ''} onClick={() => persistYearlyType('lineas')}>Líneas</button>
-              <button className={chartTypeYearly === 'area' ? 'active' : ''} onClick={() => persistYearlyType('area')}>Área</button>
+              <button aria-pressed={chartTypeYearly === 'barras'} className={chartTypeYearly === 'barras' ? 'active' : ''} onClick={() => persistYearlyType('barras')}>Barras</button>
+              <button aria-pressed={chartTypeYearly === 'lineas'} className={chartTypeYearly === 'lineas' ? 'active' : ''} onClick={() => persistYearlyType('lineas')}>Líneas</button>
+              <button aria-pressed={chartTypeYearly === 'area'} className={chartTypeYearly === 'area' ? 'active' : ''} onClick={() => persistYearlyType('area')}>Área</button>
             </div>
           </div>
 
@@ -307,6 +307,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
               ].map(option => (
                 <button
                   key={option.id}
+                  aria-pressed={chartPalette === option.id}
                   className={chartPalette === option.id ? 'active' : ''}
                   onClick={() => persistPalette(option.id)}
                 >
@@ -331,6 +332,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
               ].map(option => (
                 <button
                   key={option.id}
+                  aria-pressed={accentColor === option.id}
                   className={accentColor === option.id ? 'active' : ''}
                   onClick={() => updatePreferences({ accentColor: option.id })}
                 >
@@ -344,17 +346,17 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
           <div className="appearance-group">
             <span>Densidad de la interfaz</span>
             <div className="segmented-control">
-              <button className={density === 'compact' ? 'active' : ''} onClick={() => updatePreferences({ density: 'compact' })}>Compacta</button>
-              <button className={density === 'normal' ? 'active' : ''} onClick={() => updatePreferences({ density: 'normal' })}>Normal</button>
-              <button className={density === 'comfortable' ? 'active' : ''} onClick={() => updatePreferences({ density: 'comfortable' })}>Cómoda</button>
+              <button aria-pressed={density === 'compact'} className={density === 'compact' ? 'active' : ''} onClick={() => updatePreferences({ density: 'compact' })}>Compacta</button>
+              <button aria-pressed={density === 'normal'} className={density === 'normal' ? 'active' : ''} onClick={() => updatePreferences({ density: 'normal' })}>Normal</button>
+              <button aria-pressed={density === 'comfortable'} className={density === 'comfortable' ? 'active' : ''} onClick={() => updatePreferences({ density: 'comfortable' })}>Cómoda</button>
             </div>
           </div>
 
           <div className="appearance-group">
             <span>Vista al iniciar</span>
             <div className="segmented-control two-options">
-              <button className={initialView === 'monthly' ? 'active' : ''} onClick={() => updatePreferences({ initialView: 'monthly' })}>Mes</button>
-              <button className={initialView === 'yearly' ? 'active' : ''} onClick={() => updatePreferences({ initialView: 'yearly' })}>Año</button>
+              <button aria-pressed={initialView === 'monthly'} className={initialView === 'monthly' ? 'active' : ''} onClick={() => updatePreferences({ initialView: 'monthly' })}>Mes</button>
+              <button aria-pressed={initialView === 'yearly'} className={initialView === 'yearly' ? 'active' : ''} onClick={() => updatePreferences({ initialView: 'yearly' })}>Año</button>
             </div>
           </div>
         </section>
