@@ -52,8 +52,10 @@ function TreemapNode({ x, y, width, height, name, value, index = 0, colors, tota
 
   const safeName = String(name || 'Sin categoría')
   const showName = width >= 72 && height >= 42
-  const showPercentage = width >= 72 && height >= 62
-  const maxCharacters = Math.max(5, Math.floor(width / 9))
+  const showAmount = width >= 100 && height >= 62
+  const share = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 1 }).format(value / total)
+  const showPercentage = width >= 145 && showName
+  const maxCharacters = Math.max(3, Math.floor((width - 24 - (showPercentage ? 58 : 0)) / 8))
   const visibleName = safeName.length > maxCharacters
     ? `${safeName.slice(0, Math.max(2, maxCharacters - 1))}…`
     : safeName
@@ -71,12 +73,12 @@ function TreemapNode({ x, y, width, height, name, value, index = 0, colors, tota
       />
       {showName && (
         <text x={x + 12} y={y + 23} fill={textColor} fontSize="12" fontWeight="700">
-          {visibleName}
+          {visibleName}{showPercentage ? ` · ${share}` : ''}
         </text>
       )}
-      {showPercentage && (
+      {showAmount && (
         <text x={x + 12} y={y + 43} fill={textColor} fillOpacity="0.78" fontSize="11">
-          {Math.round((value / total) * 100)}%
+          {formatMoney(value)}
         </text>
       )}
     </g>
@@ -108,10 +110,12 @@ export default function ExpenseChart({
 
   return (
     <div className="compact-chart">
-      <div className="compact-chart-header">
+      <div className="compact-chart-header chart-summary-header">
         <div>
-          <h3>{chartStyle.type === 'balance' ? 'Balance del mes' : 'Distribución por categoría'}</h3>
-          <p>{chartStyle.type === 'balance' ? 'Lo que entra, lo que sale y lo que queda.' : 'Descubre dónde se concentra tu dinero.'}</p>
+          {chartStyle.type === 'balance' ? <h3>Balance del mes</h3> : <>
+            <span className="chart-summary-label">Total {flow === 'income' ? 'ingresos' : 'gastos'}</span>
+            <strong className="chart-summary-total">{formatMoney(total)}</strong>
+          </>}
         </div>
         {chartStyle.type !== 'balance' && <div className="flow-switch">
           <button aria-pressed={flow === 'expense'} className={flow === 'expense' ? 'active' : ''} onClick={() => setFlow('expense')}>Gastos</button>
@@ -154,15 +158,12 @@ export default function ExpenseChart({
       ) : chartStyle.type === 'ranking' ? (
         <div className="ranking-chart">
           <div className="chart-overview">
-            <span>Total {flow === 'income' ? 'ingresos' : 'gastos'}</span>
-            <strong>{formatMoney(total)}</strong>
             {biggest && <p>{biggest.name} concentra el {percent(biggest.value / total)} del total.</p>}
           </div>
           <ol className="ranking-chart-list">
             {[...data].sort((a, b) => b.value - a.value).map((item, index) => (
               <li key={item.name} style={{ '--ranking-color': colors[index % colors.length], '--ranking-share': `${item.value / total * 100}%` }}>
-                <div className="ranking-chart-heading"><span><span className="ranking-position" aria-hidden="true">{index + 1}</span>{item.name}</span><strong>{formatMoney(item.value)}</strong></div>
-                <div className="ranking-chart-caption"><span>{percent(item.value / total)} del total</span></div>
+                <div className="ranking-chart-heading"><span><span className="ranking-position" aria-hidden="true">{index + 1}</span>{item.name}<small className="ranking-percentage">{percent(item.value / total)}</small></span><strong>{formatMoney(item.value)}</strong></div>
               </li>
             ))}
           </ol>

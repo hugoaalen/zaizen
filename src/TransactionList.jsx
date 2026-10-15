@@ -178,13 +178,13 @@ export default function TransactionList({ transactions, user, customCategories, 
         <div className="activity-filter-panel">
           <div className="transaction-filters">
             <input aria-label="Buscar movimientos" className="input-minimal" type="search" placeholder="Buscar por descripción..." value={search} onChange={event => setSearch(event.target.value)} />
-            <select className="input-minimal" value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filtrar por tipo">
-              <option value="all">Todos los tipos</option>
-              <option value="expense">Solo gastos</option>
-              <option value="income">Solo ingresos</option>
+            <select className={`input-minimal${typeFilter === 'all' ? ' filter-placeholder' : ''}`} value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filtrar por tipo">
+              <option value="all">Tipo</option>
+              <option value="expense">Gastos</option>
+              <option value="income">Ingresos</option>
             </select>
-            <select className="input-minimal" value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filtrar por categoría">
-              <option value="all">Todas las categorías</option>
+            <select className={`input-minimal${categoryFilter === 'all' ? ' filter-placeholder' : ''}`} value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filtrar por categoría">
+              <option value="all">Categoría</option>
               {categories.map(category => <option key={category} value={category}>{category}</option>)}
             </select>
           </div>

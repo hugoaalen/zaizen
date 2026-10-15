@@ -6,6 +6,7 @@ import {
   transactionsToCsv
 } from './privacyUtils'
 import { clearOfflineData } from './offlineCache'
+import { fetchAllRows } from './paginationUtils'
 
 const EXPORT_TABLES = [
   'transactions',
@@ -32,10 +33,10 @@ const triggerDownload = (content, filename, type) => {
 }
 
 const loadUserTable = async (table, userId) => {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllRows(() => supabase
     .from(table)
     .select('*')
-    .eq('user_id', userId)
+    .eq('user_id', userId).order(table === 'user_preferences' ? 'user_id' : 'id'))
   if (error) throw error
   return data || []
 }
@@ -50,11 +51,11 @@ export default function PrivacySettings({ user }) {
     setLoadingAction('csv')
     setMessage(null)
     try {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(() => supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
-        .order('date', { ascending: false })
+        .order('date', { ascending: false }).order('id'))
       if (error) throw error
 
       triggerDownload(

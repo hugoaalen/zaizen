@@ -33,6 +33,7 @@ import ChevronIcon from './ChevronIcon'
 import InterfaceIcon from './InterfaceIcon'
 import { useFeedback } from './FeedbackProvider'
 import { describeDataError } from './dataErrorUtils'
+import { fetchAllRows } from './paginationUtils'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -48,19 +49,19 @@ const loadMonthlyTransactions = async (userId, year, month) => {
   const previousRange = getMonthRange(previousDate.getFullYear(), previousDate.getMonth() + 1)
 
   return Promise.all([
-    supabase
+    fetchAllRows(() => supabase
       .from('transactions')
       .select('*')
       .eq('user_id', userId)
       .gte('date', currentRange.firstDay)
       .lte('date', currentRange.lastDay)
-      .order('date', { ascending: false }),
-    supabase
+      .order('date', { ascending: false }).order('id')),
+    fetchAllRows(() => supabase
       .from('transactions')
       .select('amount,type,category,date')
       .eq('user_id', userId)
       .gte('date', previousRange.firstDay)
-      .lte('date', previousRange.lastDay)
+      .lte('date', previousRange.lastDay).order('id'))
   ])
 }
 
@@ -294,12 +295,19 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
 
           <div className="appearance-group">
             <span>Gráfico mensual</span>
-            <div className="segmented-control">
-              <button aria-pressed={chartTypeMonthly === 'circular'} className={chartTypeMonthly === 'circular' ? 'active' : ''} onClick={() => persistMonthlyType('circular')}>Circular</button>
-              <button aria-pressed={chartTypeMonthly === 'barras'} className={chartTypeMonthly === 'barras' ? 'active' : ''} onClick={() => persistMonthlyType('barras')}>Barras</button>
-              <button aria-pressed={chartTypeMonthly === 'mosaico'} className={chartTypeMonthly === 'mosaico' ? 'active' : ''} onClick={() => persistMonthlyType('mosaico')}>Mosaico</button>
-              <button aria-pressed={chartTypeMonthly === 'ranking'} className={chartTypeMonthly === 'ranking' ? 'active' : ''} onClick={() => persistMonthlyType('ranking')}>Ranking</button>
-              <button aria-pressed={chartTypeMonthly === 'balance'} className={chartTypeMonthly === 'balance' ? 'active' : ''} onClick={() => persistMonthlyType('balance')}>Balance</button>
+            <div className="monthly-chart-options" role="group" aria-label="Gráfico mensual">
+              {[
+                ['circular', 'Circular', 'Reparto por categoría'],
+                ['barras', 'Barras', 'Compara importes'],
+                ['mosaico', 'Mosaico', 'Peso de cada categoría'],
+                ['ranking', 'Ranking', 'Orden por importe'],
+                ['balance', 'Balance', 'Ingresos frente a gastos']
+              ].map(([value, label, description]) => (
+                <button type="button" key={value} aria-pressed={chartTypeMonthly === value} className={chartTypeMonthly === value ? 'active' : ''} onClick={() => persistMonthlyType(value)}>
+                  <span className={`chart-option-preview ${value}`} aria-hidden="true"><i /><i /><i /></span>
+                  <span><strong>{label}</strong><small>{description}</small></span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -579,7 +587,6 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
           </Suspense>
         </main>
       )}
-      {view === 'monthly' && <button className="mobile-add-movement" disabled={!online} onClick={() => setNewTransactionType('expense')}><InterfaceIcon name="plus" />Añadir movimiento</button>}
     </div>
   )
 }

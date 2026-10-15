@@ -5,6 +5,7 @@ import ChevronIcon from './ChevronIcon'
 import InterfaceIcon from './InterfaceIcon'
 import { describeDataError } from './dataErrorUtils'
 import { summarizeYear, comparableYearTotals } from './yearlyUtils'
+import { fetchAllRows } from './paginationUtils'
 
 const money = value => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)
 
@@ -38,7 +39,7 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
       setLoading(true)
       setError('')
       setTransactions([])
-      const result = await supabase.from('transactions').select('amount,type,date').eq('user_id', user.id).gte('date', `${year - 1}-01-01`).lte('date', `${year}-12-31`)
+      const result = await fetchAllRows(() => supabase.from('transactions').select('amount,type,date').eq('user_id', user.id).gte('date', `${year - 1}-01-01`).lte('date', `${year}-12-31`).order('id'))
       if (!active) return
       setLoading(false)
       if (result.error) setError(describeDataError(result.error, 'cargar el resumen anual'))

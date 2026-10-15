@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import InterfaceIcon from './InterfaceIcon'
 
 export default function SettingsPanel({ open, onClose, sections, footer }) {
@@ -56,7 +57,7 @@ export default function SettingsPanel({ open, onClose, sections, footer }) {
 
   const activeContent = sections.find(section => section.id === activeSection)?.content
 
-  return (
+  return createPortal(
     <div className="settings-overlay">
       <button type="button" className="settings-backdrop" onClick={onClose} aria-label="Cerrar ajustes" />
       <aside ref={dialogRef} className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-describedby="settings-description">
@@ -114,6 +115,7 @@ export default function SettingsPanel({ open, onClose, sections, footer }) {
         </div>
         {footer && <footer className="settings-footer">{footer}</footer>}
       </aside>
-    </div>
+    </div>,
+    document.body
   )
 }
