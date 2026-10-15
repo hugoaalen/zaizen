@@ -45,6 +45,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   outline: 3px solid var(--btn-bg);
   outline-offset: 3px;
 }
+:where(button, a, input, select, textarea, [tabindex]):focus:not(:focus-visible) {
+  outline: none;
+}
+.input-minimal:focus:not(:focus-visible),
+.auth-form .input-minimal:focus:not(:focus-visible) {
+  border-color: var(--border-color);
+  box-shadow: none;
+}
 
 .card, .dashboard-section, .dashboard-summary, .settings-section,
 .yearly-summary, .yearly-chart-card, .savings-goal-card {
@@ -96,6 +104,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .year-stepper { grid-template-columns: 44px minmax(54px, 1fr) 44px; }
 .year-stepper strong, .year-stepper span { font-size: 16px; font-variant-numeric: tabular-nums; }
 .stepper-chevron { width: 12px; height: 16px; }
+.yearly-view .yearly-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: center; }
+.yearly-toolbar > div:first-child { display: contents; }
+.yearly-toolbar .section-kicker { grid-column: 1; grid-row: 1; }
+.yearly-toolbar h2 { grid-column: 1; grid-row: 2; margin-top: 0; }
+.yearly-toolbar p { grid-column: 1 / -1; grid-row: 3; }
+.yearly-toolbar .yearly-period { grid-column: 2; grid-row: 1 / 3; width: auto; display: flex; flex-direction: column; gap: 6px; }
+.yearly-period .year-stepper { width: 142px; grid-template-columns: 40px minmax(0, 1fr) 40px; }
+.yearly-period > .btn-outline { min-height: 44px; padding: 4px 12px; font-size: 12px; }
+@media (max-width: 380px) {
+  .yearly-view .yearly-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .yearly-toolbar .yearly-period { grid-column: 1; grid-row: 4; justify-self: end; flex-direction: row; margin-top: 8px; }
+}
 .dashboard-toolbar .period-selector { display: grid; grid-template-columns: minmax(180px, 1fr) 142px auto; gap: 12px; padding: 0; border: 0; background: transparent; }
 .period-selector .month-stepper, .period-selector .year-stepper { width: 100%; border: 1px solid var(--border-color); background: var(--bg-card); box-shadow: none; border-radius: 16px; height: 52px; }
 .period-selector .current-month-button { display: grid; place-items: center; grid-column: auto; width: 44px; min-width: 44px; height: 52px; padding: 0; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); color: var(--text-muted); }
@@ -161,9 +181,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 .input-minimal::placeholder { color: var(--text-muted); opacity: .85; }
-.input-minimal:focus { border-color: var(--btn-bg); }
+.input-minimal:focus-visible { border-color: var(--btn-bg); }
 select.input-minimal { padding-right: 44px; cursor: pointer; background-position: right 16px center; }
 .month-stepper select.input-minimal { padding: 0 6px; }
+.month-stepper select.input-minimal:focus {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+/* Keep focus on the complete control instead of clipping a ring inside it. */
+.month-stepper:has(select:focus-visible) {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 3px;
+}
 .btn-minimal, .btn-outline, .settings-add-button, .privacy-delete-button, .date-field-clear {
   min-height: 44px;
   border-radius: 12px;
