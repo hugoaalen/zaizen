@@ -63,9 +63,8 @@ export default function SettingsPanel({ open, onClose, sections, footer }) {
       <aside ref={dialogRef} className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-describedby="settings-description">
         <header className="settings-header">
           <div>
-            <span className="settings-eyebrow">Preferencias</span>
             <h2 id="settings-title">Ajustes</h2>
-            <p id="settings-description">Personaliza cómo registras y visualizas tus finanzas.</p>
+            <p id="settings-description">Tu espacio, a tu manera.</p>
           </div>
           <button ref={closeButtonRef} type="button" onClick={onClose} className="settings-close" aria-label="Cerrar ajustes"><InterfaceIcon name="close" /></button>
         </header>

@@ -128,7 +128,6 @@ export default function PrivacySettings({ user }) {
             <h3>Exportación de datos</h3>
             <p>Descarga tus movimientos o conserva una copia completa de ZaiZen.</p>
           </div>
-          <span className="privacy-lock" aria-hidden="true">⌁</span>
         </div>
 
         <div className="privacy-action-list">

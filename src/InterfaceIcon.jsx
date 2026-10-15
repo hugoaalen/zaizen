@@ -1,4 +1,5 @@
 const paths = {
+  calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM10 14h4v4h-4Z',
   plus: 'M12 5v14M5 12h14',
   minus: 'M5 12h14',
   close: 'm6 6 12 12M18 6 6 18',

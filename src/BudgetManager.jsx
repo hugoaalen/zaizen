@@ -189,9 +189,10 @@ export default function BudgetManager({
       </div>
 
       <form className="budget-form" onSubmit={saveBudget}>
-        <select className="input-minimal" value={category} onChange={e => setCategory(e.target.value)}>
+        <label className="budget-field"><span>Categoría</span><select className="input-minimal" value={category} onChange={e => setCategory(e.target.value)}>
           {expenseCategories.map(name => <option key={name} value={name}>{name}</option>)}
-        </select>
+        </select></label>
+        <label className="budget-field"><span>Límite mensual</span>
         <input
           className="input-minimal"
           type="number"
@@ -202,10 +203,10 @@ export default function BudgetManager({
           required
           value={amount}
           onChange={e => setAmount(e.target.value)}
-        />
+        /></label>
         <label className="budget-recurring-toggle">
-          <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
-          <span>Repetir este límite cada mes</span>
+          <span><strong>Repetir cada mes</strong><small>Se aplicará también en los próximos meses.</small></span>
+          <input type="checkbox" role="switch" aria-label="Repetir límite cada mes" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
         </label>
         <button className="btn-minimal" disabled={loading}>
           {loading ? 'Guardando...' : 'Guardar límite'}

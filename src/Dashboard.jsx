@@ -162,9 +162,10 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
     let active = true
     const loadTransactions = async () => {
       setFetching(true)
-      setTransactions([])
-      setPreviousTransactions([])
       const cachePeriod = getMonthlyCachePeriod(selectedYear, selectedMonth)
+      const initialCache = loadOfflineData(session.user.id, 'monthly-transactions', cachePeriod)
+      setTransactions(initialCache?.data.current || [])
+      setPreviousTransactions(initialCache?.data.previous || [])
       const [currentResult, previousResult] = await loadMonthlyTransactions(
         session.user.id,
         selectedYear,
@@ -496,7 +497,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
       {view === 'monthly' ? (
         <main className="dashboard-main">
           {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
-          {fetching && <p role="status">Cargando movimientos…</p>}
+          <span className="monthly-loading-indicator" role="status">{fetching ? 'Actualizando movimientos' : ''}</span>
 
           <section className="dashboard-toolbar">
             <div className="period-selector">
@@ -512,7 +513,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
                 <span style={{ fontWeight: '700' }}>{selectedYear}</span>
                 <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente"><ChevronIcon direction="right" /></button>
               </div>
-              <button className="btn-outline current-month-button" onClick={goToCurrentMonth}>Hoy</button>
+              <button className="btn-outline current-month-button" onClick={goToCurrentMonth} aria-label="Volver al mes actual" title="Volver al mes actual"><InterfaceIcon name="calendar" /></button>
             </div>
 
             <div className="quick-actions">
