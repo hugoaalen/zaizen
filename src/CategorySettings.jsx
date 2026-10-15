@@ -3,12 +3,16 @@ import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import { cleanCategoryName, normalizeCategoryKey } from './categoryUtils'
 import { MAX_CATEGORY_LENGTH } from './securityUtils'
+import InterfaceIcon from './InterfaceIcon'
+import { useFeedback } from './FeedbackProvider'
 
 export default function CategorySettings({ user, onCategoryChanged }) {
   const [newCat, setNewCat] = useState('')
   const [type, setType] = useState('expense')
   const [categories, setCategories] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const { confirm, notify } = useFeedback()
+  const [saving, setSaving] = useState(false)
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -38,6 +42,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
 
   const addCategory = async (e) => {
     e.preventDefault()
+    if (saving) return
     const categoryName = cleanCategoryName(newCat)
     if (!categoryName) return
     setErrorMessage('')
@@ -53,9 +58,11 @@ export default function CategorySettings({ user, onCategoryChanged }) {
       return
     }
 
+    setSaving(true)
     const { error } = await supabase.from('custom_categories').insert([
       { user_id: user.id, name: categoryName, type }
     ])
+    setSaving(false)
     
     if (error) {
       setErrorMessage(error.code === '23505'
@@ -63,6 +70,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
         : 'No se pudo guardar la categoría. Revisa el nombre.')
     } else {
       setNewCat('')
+      notify('Categoría añadida.')
       fetchCategories()
       // NUEVO: Avisamos al Dashboard de que hay categorías nuevas
       if (onCategoryChanged) onCategoryChanged() 
@@ -71,7 +79,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
 
   const deleteCategory = async (id) => {
     const category = categories.find(item => item.id === id)
-    if (!window.confirm(`¿Eliminar la categoría ${category?.name || ''}?`)) return
+    if (!await confirm(`¿Eliminar la categoría ${category?.name || ''}? Los movimientos existentes se conservarán.`)) return
 
     const { error } = await supabase
       .from('custom_categories')
@@ -83,6 +91,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
       return
     }
     fetchCategories()
+    notify('Categoría eliminada.')
     // NUEVO: Avisamos al Dashboard de que hemos borrado una
     if (onCategoryChanged) onCategoryChanged() 
   }
@@ -116,7 +125,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
             <option value="income">Ingreso</option>
           </select>
         </label>
-        <button type="submit" className="btn-minimal settings-add-button">Añadir</button>
+        <button type="submit" disabled={saving} className="btn-minimal settings-add-button">{saving ? 'Guardando…' : 'Añadir'}</button>
       </form>
 
       <div className="category-list">
@@ -130,7 +139,7 @@ export default function CategorySettings({ user, onCategoryChanged }) {
                 <strong>{c.name}</strong>
                 <small>{isIncome ? 'Ingreso' : 'Gasto'}</small>
               </div>
-              <button className="icon-button" onClick={() => deleteCategory(c.id)} aria-label={`Eliminar categoría ${c.name}`}>×</button>
+              <button className="icon-button destructive" onClick={() => deleteCategory(c.id)} aria-label={`Eliminar categoría ${c.name}`}><InterfaceIcon name="delete" /></button>
             </div>
           )
         })}

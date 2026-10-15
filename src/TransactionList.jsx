@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
-import { formatTransactionDate } from './dateUtils'
+import { parseISO } from 'date-fns'
+import { useFeedback } from './FeedbackProvider'
 import {
   getPreferredCategoryName,
   mergeCategoryNames,
@@ -48,12 +49,14 @@ function ActionIcon({ type }) {
 }
 
 export default function TransactionList({ transactions, user, customCategories, onTransactionDeleted }) {
+  const { confirm, notify } = useFeedback()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [editing, setEditing] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [expanded, setExpanded] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const categories = useMemo(
     () => mergeCategoryNames(transactions.map(transaction =>
@@ -93,7 +96,8 @@ export default function TransactionList({ transactions, user, customCategories, 
   )
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Seguro que quieres borrar este movimiento?')) return
+    const item = transactions.find(transaction => transaction.id === id)
+    if (!await confirm(`¿Eliminar «${item?.description || 'este movimiento'}»? Esta acción no se puede deshacer.`)) return
 
     const { error } = await supabase
       .from('transactions')
@@ -102,11 +106,13 @@ export default function TransactionList({ transactions, user, customCategories, 
       .eq('user_id', user.id)
 
     if (error) setErrorMessage('No se pudo borrar el movimiento.')
-    else onTransactionDeleted()
+    else { notify('Movimiento eliminado.'); onTransactionDeleted() }
   }
 
   const handleSave = async (event) => {
     event.preventDefault()
+    if (saving) return
+    setSaving(true)
     setErrorMessage('')
     const { error } = await supabase
       .from('transactions')
@@ -120,8 +126,10 @@ export default function TransactionList({ transactions, user, customCategories, 
       .eq('id', editing.id)
       .eq('user_id', user.id)
 
+    setSaving(false)
     if (error) setErrorMessage('No se pudo actualizar el movimiento.')
     else {
+      notify('Movimiento actualizado.')
       setEditing(null)
       onTransactionDeleted()
     }
@@ -139,7 +147,7 @@ export default function TransactionList({ transactions, user, customCategories, 
     }])
 
     if (error) setErrorMessage('No se pudo duplicar el movimiento.')
-    else onTransactionDeleted()
+    else { notify('Movimiento duplicado.'); onTransactionDeleted() }
   }
 
   if (transactions.length === 0) {
@@ -166,10 +174,10 @@ export default function TransactionList({ transactions, user, customCategories, 
         </div>
       </div>
 
-      {expanded && (
+      {(
         <div className="activity-filter-panel">
           <div className="transaction-filters">
-            <input className="input-minimal" type="search" placeholder="Buscar por descripción..." value={search} onChange={event => setSearch(event.target.value)} />
+            <input aria-label="Buscar movimientos" className="input-minimal" type="search" placeholder="Buscar por descripción..." value={search} onChange={event => setSearch(event.target.value)} />
             <select className="input-minimal" value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filtrar por tipo">
               <option value="all">Todos los tipos</option>
               <option value="expense">Solo gastos</option>
@@ -188,15 +196,15 @@ export default function TransactionList({ transactions, user, customCategories, 
 
       <div className="compact-history-list">
         {visibleTransactions.map(transaction => (
-          <article className="compact-transaction" key={transaction.id}>
-            <span className={`transaction-symbol ${transaction.type}`} aria-hidden="true">
-              {transaction.type === 'income' ? '↙' : '↗'}
-            </span>
+          <article className={`compact-transaction ${transaction.type}`} key={transaction.id}>
+            <time className="transaction-date-badge" dateTime={transaction.date} aria-label={new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' }).format(parseISO(transaction.date))}>
+              <strong>{parseISO(transaction.date).getDate()}</strong>
+              <small>{new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(parseISO(transaction.date))}</small>
+            </time>
             <div className="transaction-copy">
               <strong>{transaction.description}</strong>
               <div>
                 <span>{transaction.category || 'Varios'}</span>
-                <small>{formatTransactionDate(transaction.date)}</small>
               </div>
             </div>
             <div className="transaction-side">
@@ -217,9 +225,10 @@ export default function TransactionList({ transactions, user, customCategories, 
                   aria-label={`Editar ${transaction.description}`}
                 >
                   <ActionIcon type="edit" />
+                  <span>Editar</span>
                 </button>
-                <button onClick={() => handleDuplicate(transaction)} className="icon-button" title="Duplicar" aria-label={`Duplicar ${transaction.description}`}><ActionIcon type="duplicate" /></button>
-                <button onClick={() => handleDelete(transaction.id)} className="icon-button delete" title="Borrar" aria-label={`Borrar ${transaction.description}`}><ActionIcon type="delete" /></button>
+                <button onClick={() => handleDuplicate(transaction)} className="icon-button" title="Duplicar" aria-label={`Duplicar ${transaction.description}`}><ActionIcon type="duplicate" /><span>Duplicar</span></button>
+                <button onClick={() => handleDelete(transaction.id)} className="icon-button delete" title="Borrar" aria-label={`Borrar ${transaction.description}`}><ActionIcon type="delete" /><span>Borrar</span></button>
               </div>
             </div>
           </article>
@@ -265,7 +274,7 @@ export default function TransactionList({ transactions, user, customCategories, 
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-outline" onClick={() => setEditing(null)}>Cancelar</button>
-              <button type="submit" className="btn-minimal">Guardar cambios</button>
+              <button type="submit" disabled={saving} className="btn-minimal">{saving ? 'Guardando…' : 'Guardar cambios'}</button>
             </div>
           </form>
         </div>

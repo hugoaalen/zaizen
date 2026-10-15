@@ -18,7 +18,7 @@ import { groupTransactionsByCategory } from './categoryUtils'
 const PALETTES = {
   normal: {
     income: ['#10b981', '#34d399', '#059669', '#6ee7b7'],
-    expense: ['#6366f1', '#ec4899', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444', '#14b8a6', '#f97316', '#84cc16', '#e11d48']
+    expense: ['#818cf8', '#c084fc', '#f472b6', '#fbbf24', '#60a5fa', '#fb7185', '#2dd4bf', '#fb923c', '#a3e635', '#a78bfa']
   },
   pastel: {
     income: ['#bbf7d0', '#86efac', '#4ade80', '#6ee7b7'],
@@ -85,7 +85,8 @@ function TreemapNode({ x, y, width, height, name, value, index = 0, colors, tota
 
 export default function ExpenseChart({
   transactions,
-  chartStyle = { type: 'circular', palette: 'normal' }
+  chartStyle = { type: 'circular', palette: 'normal' },
+  onChartTypeChange
 }) {
   const [flow, setFlow] = useState('expense')
   const palette = PALETTES[chartStyle.palette] || PALETTES.normal
@@ -95,6 +96,11 @@ export default function ExpenseChart({
   const data = groupTransactionsByCategory(transactions, flow, preferredCategories)
   const colors = flow === 'income' ? palette.income : palette.expense
   const total = data.reduce((sum, item) => sum + item.value, 0)
+  const income = transactions.filter(item => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0)
+  const expense = transactions.filter(item => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
+  const balance = income - expense
+  const biggest = data.reduce((best, item) => !best || item.value > best.value ? item : best, null)
+  const percent = value => new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 1 }).format(value)
 
   if (transactions.length === 0) {
     return <p className="empty-state chart-empty">No hay datos este mes.</p>
@@ -104,28 +110,72 @@ export default function ExpenseChart({
     <div className="compact-chart">
       <div className="compact-chart-header">
         <div>
-          <h3>Distribución por categoría</h3>
-          <p>Descubre dónde se concentra tu dinero.</p>
+          <h3>{chartStyle.type === 'balance' ? 'Balance del mes' : 'Distribución por categoría'}</h3>
+          <p>{chartStyle.type === 'balance' ? 'Lo que entra, lo que sale y lo que queda.' : 'Descubre dónde se concentra tu dinero.'}</p>
         </div>
-        <div className="flow-switch">
-          <button className={flow === 'expense' ? 'active' : ''} onClick={() => setFlow('expense')}>Gastos</button>
-          <button className={flow === 'income' ? 'active' : ''} onClick={() => setFlow('income')}>Ingresos</button>
-        </div>
+        {chartStyle.type !== 'balance' && <div className="flow-switch">
+          <button aria-pressed={flow === 'expense'} className={flow === 'expense' ? 'active' : ''} onClick={() => setFlow('expense')}>Gastos</button>
+          <button aria-pressed={flow === 'income'} className={flow === 'income' ? 'active' : ''} onClick={() => setFlow('income')}>Ingresos</button>
+        </div>}
       </div>
 
-      {data.length === 0 ? (
+      {onChartTypeChange && (
+        <label className="chart-type-picker">
+          Visualización
+          <select className="input-minimal" value={chartStyle.type} onChange={event => onChartTypeChange(event.target.value)}>
+            <option value="ranking">Ranking · importes y porcentajes</option>
+            <option value="balance">Balance · ingresos frente a gastos</option>
+            <option value="circular">Circular · distribución</option>
+            <option value="barras">Barras · comparar categorías</option>
+            <option value="mosaico">Mosaico · peso de cada categoría</option>
+          </select>
+        </label>
+      )}
+
+      {chartStyle.type === 'balance' ? (
+        <div className="balance-chart">
+          <div className="chart-overview">
+            <span>Disponible después de gastos</span>
+            <strong className={balance >= 0 ? 'positive' : 'negative'}>{formatMoney(balance)}</strong>
+            <p>{income > 0 ? `Gastos equivalen al ${percent(expense / income)} de tus ingresos.` : 'Añade ingresos para medir la proporción de gasto.'}</p>
+          </div>
+          {[[ 'Ingresos', income, 'var(--color-income)' ], [ 'Gastos', expense, 'var(--color-expense)' ]].map(([label, value, color]) => (
+            <div className="comparison-chart-row" key={label}>
+              <div><span>{label}</span><strong>{formatMoney(value)}</strong></div>
+              <div className="comparison-chart-track" aria-hidden="true"><i style={{ width: `${Math.max(income, expense) > 0 ? value / Math.max(income, expense) * 100 : 0}%`, background: color }} /></div>
+            </div>
+          ))}
+          <p className="chart-takeaway">{balance >= 0 ? 'Tus ingresos cubren los gastos del mes.' : `Faltan ${formatMoney(-balance)} para cubrir los gastos del mes.`}</p>
+        </div>
+      ) : data.length === 0 ? (
         <p className="empty-state chart-empty">
           No hay {flow === 'income' ? 'ingresos' : 'gastos'} este mes.
         </p>
+      ) : chartStyle.type === 'ranking' ? (
+        <div className="ranking-chart">
+          <div className="chart-overview">
+            <span>Total {flow === 'income' ? 'ingresos' : 'gastos'}</span>
+            <strong>{formatMoney(total)}</strong>
+            {biggest && <p>{biggest.name} concentra el {percent(biggest.value / total)} del total.</p>}
+          </div>
+          <ol className="ranking-chart-list">
+            {[...data].sort((a, b) => b.value - a.value).map((item, index) => (
+              <li key={item.name} style={{ '--ranking-color': colors[index % colors.length], '--ranking-share': `${item.value / total * 100}%` }}>
+                <div className="ranking-chart-heading"><span><span className="ranking-position" aria-hidden="true">{index + 1}</span>{item.name}</span><strong>{formatMoney(item.value)}</strong></div>
+                <div className="ranking-chart-caption"><span>{percent(item.value / total)} del total</span></div>
+              </li>
+            ))}
+          </ol>
+        </div>
       ) : isBar ? (
         <div className="chart-canvas" style={{ height: Math.max(230, data.length * 46) }}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 300 }}>
-            <BarChart data={data} layout="vertical" margin={{ left: 70, right: 20 }}>
+            <BarChart data={data} layout="vertical" margin={{ left: 0, right: 12 }} barSize={18}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
               <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="name" type="category" width={70} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="name" type="category" width={100} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <Tooltip content={<CategoryTooltip />} cursor={{ fill: 'var(--input-bg)' }} />
-              <Bar dataKey="value" radius={[0, 5, 5, 0]}>
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={false}>
                 {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
               </Bar>
             </BarChart>
@@ -140,6 +190,7 @@ export default function ExpenseChart({
                 dataKey="value"
                 nameKey="name"
                 stroke="none"
+                isAnimationActive={false}
                 content={(
                   <TreemapNode
                     colors={colors}
@@ -163,7 +214,7 @@ export default function ExpenseChart({
           <div className="donut-visual">
             <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 250 }}>
               <PieChart>
-                <Pie data={data} cx="50%" cy="50%" innerRadius="63%" outerRadius="84%" paddingAngle={3} dataKey="value" stroke="none">
+                <Pie data={data} cx="50%" cy="50%" innerRadius="69%" outerRadius="87%" paddingAngle={1.5} cornerRadius={3} dataKey="value" stroke="none" isAnimationActive={false}>
                   {data.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
                 </Pie>
                 <Tooltip content={<CategoryTooltip />} />
@@ -181,7 +232,10 @@ export default function ExpenseChart({
               <div className="donut-legend-item" key={item.name}>
                 <i style={{ background: colors[index % colors.length] }} />
                 <span title={item.name}>{item.name}</span>
-                <strong>{Math.round((item.value / total) * 100)}%</strong>
+                <strong className="category-chart-value">
+                  {formatMoney(item.value)}
+                  <small>{new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 1 }).format(item.value / total)}</small>
+                </strong>
               </div>
             ))}
           </div>

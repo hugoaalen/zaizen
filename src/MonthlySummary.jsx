@@ -11,10 +11,11 @@ const formatMoney = (value) =>
     currency: 'EUR'
   }).format(value)
 
-const formatChange = (current, previous) => {
+const formatChange = (current, previous, noun) => {
   const change = calculatePercentageChange(current, previous)
-  if (change === null) return 'Sin base anterior'
-  return `${change > 0 ? '+' : ''}${change.toFixed(0)}% vs. mes anterior`
+  const difference = current - previous
+  if (difference === 0) return 'Igual que el mes anterior'
+  return `${formatMoney(Math.abs(difference))} ${difference > 0 ? 'más' : 'menos'} ${noun}${change === null ? '' : ` (${change > 0 ? '+' : ''}${change.toFixed(0)}%)`} que el mes anterior`
 }
 
 export default function MonthlySummary({
@@ -33,6 +34,8 @@ export default function MonthlySummary({
   const { elapsedDays, daysInMonth, isFuture } = getMonthProgress(selectedYear, selectedMonth)
   const dailyAverage = elapsedDays > 0 ? current.expense / elapsedDays : 0
   const projectedExpense = elapsedDays > 0 ? dailyAverage * daysInMonth : 0
+  const today = new Date()
+  const isCurrent = selectedYear === today.getFullYear() && selectedMonth === today.getMonth() + 1
 
   const statusText = current.income === 0
     ? 'Añade ingresos para medir tu balance'
@@ -56,13 +59,13 @@ export default function MonthlySummary({
         <article>
           <span>Ingresos</span>
           <strong>{formatMoney(current.income)}</strong>
-          <small>{formatChange(current.income, previous.income)}</small>
+          <small>{formatChange(current.income, previous.income, 'de ingresos')}</small>
         </article>
         <article>
           <span>Gastos</span>
           <strong>{formatMoney(current.expense)}</strong>
           <small className={expenseChange !== null && expenseChange <= 0 ? 'positive' : 'negative'}>
-            {formatChange(current.expense, previous.expense)}
+            {formatChange(current.expense, previous.expense, 'de gasto')}
           </small>
         </article>
         <article>
@@ -85,12 +88,12 @@ export default function MonthlySummary({
             ? `${biggestSaving.category} baja ${formatMoney(Math.abs(biggestSaving.difference))}`
             : 'Sin ahorros destacables'}
         </p>
-        <p title={isFuture ? undefined : 'Estimación basada en el gasto medio diario del mes hasta hoy.'}>
+        {isCurrent && <p title="Estimación basada en el gasto medio diario del mes hasta hoy, no un gasto confirmado.">
           <span className="insight-dot projection" />
           {isFuture
             ? 'Sin proyección para meses futuros'
             : `Proyección mensual de gasto: ${formatMoney(projectedExpense)}`}
-        </p>
+        </p>}
       </div>
     </section>
   )

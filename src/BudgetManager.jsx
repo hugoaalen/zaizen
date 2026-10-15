@@ -3,6 +3,9 @@ import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES } from './constants'
 import { mergeCategoryNames, normalizeCategoryKey } from './categoryUtils'
 import { MAX_FINANCIAL_AMOUNT } from './securityUtils'
+import InterfaceIcon from './InterfaceIcon'
+import { useFeedback } from './FeedbackProvider'
+import { describeDataError } from './dataErrorUtils'
 
 export default function BudgetManager({
   user,
@@ -17,6 +20,8 @@ export default function BudgetManager({
   const [recurring, setRecurring] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
+  const { confirm, notify } = useFeedback()
 
   const expenseCategories = useMemo(
     () => mergeCategoryNames(
@@ -36,7 +41,8 @@ export default function BudgetManager({
       }, {})
   }, [transactions])
 
-  const loadBudgets = useCallback(async () => {
+  const loadBudgets = useCallback(async (isActive = () => true) => {
+    setFetching(true)
     const [budgetResult, recurringResult] = await Promise.all([
       supabase
         .from('budgets')
@@ -53,8 +59,10 @@ export default function BudgetManager({
         .order('category')
     ])
 
+    if (!isActive()) return
+
     if (budgetResult.error || recurringResult.error) {
-      setErrorMessage('Presupuestos requieren aplicar la migración de Supabase incluida en el proyecto.')
+      setErrorMessage(describeDataError(budgetResult.error || recurringResult.error, 'cargar los presupuestos'))
       setBudgets([])
     } else {
       setErrorMessage('')
@@ -88,13 +96,13 @@ export default function BudgetManager({
       mergedBudgets.sort((left, right) => left.category.localeCompare(right.category))
       setBudgets(mergedBudgets)
     }
+    setFetching(false)
   }, [selectedMonth, selectedYear, user.id])
 
   useEffect(() => {
     let active = true
     const load = async () => {
-      await loadBudgets()
-      if (!active) return
+      await loadBudgets(() => active)
     }
     load()
     return () => { active = false }
@@ -102,6 +110,7 @@ export default function BudgetManager({
 
   const saveBudget = async (e) => {
     e.preventDefault()
+    if (loading) return
     setLoading(true)
     setErrorMessage('')
 
@@ -132,6 +141,7 @@ export default function BudgetManager({
     else {
       setAmount('')
       setRecurring(false)
+      notify('Límite guardado.')
       await loadBudgets()
     }
     setLoading(false)
@@ -142,7 +152,7 @@ export default function BudgetManager({
     const confirmationMessage = budget?.recurring_id
       ? `¿Eliminar el límite recurrente de ${budget.category}? Dejará de aparecer en futuros meses.`
       : `¿Eliminar el límite de ${budget?.category || 'esta categoría'} de este mes?`
-    if (!window.confirm(confirmationMessage)) return
+    if (!await confirm(confirmationMessage)) return
 
     const isGeneratedBudget = String(id).startsWith('recurring-')
     const { error } = isGeneratedBudget
@@ -160,9 +170,13 @@ export default function BudgetManager({
         .delete()
         .eq('id', budget.recurring_id)
         .eq('user_id', user.id)
-      if (recurringError) setErrorMessage('Se eliminó este mes, pero no el límite recurrente.')
       await loadBudgets()
+      if (recurringError) {
+        setErrorMessage('No se pudo eliminar el límite recurrente. Vuelve a intentarlo.')
+        return
+      }
     } else loadBudgets()
+    if (!error) notify('Límite eliminado.')
   }
 
   return (
@@ -199,6 +213,7 @@ export default function BudgetManager({
       </form>
 
       {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
+      {fetching && <p role="status">Cargando presupuestos…</p>}
 
       <div className="budget-list">
         {budgets.map(budget => {
@@ -216,7 +231,7 @@ export default function BudgetManager({
                   {budget.is_recurring && <em className="budget-recurring-badge">Recurrente</em>}
                 </strong>
                 <span>{spent.toFixed(2)} € / {limit.toFixed(2)} €</span>
-                <button className="icon-button" onClick={() => deleteBudget(budget.id)} aria-label={`Eliminar presupuesto de ${budget.category}`}>×</button>
+                <button className="icon-button destructive" onClick={() => deleteBudget(budget.id)} aria-label={`Eliminar presupuesto de ${budget.category}`}><InterfaceIcon name="delete" /></button>
               </div>
               <div className="budget-track" aria-label={`${percentage}% consumido`}>
                 <div className={`budget-progress ${status}`} style={{ width: `${barPercentage}%` }} />
@@ -229,7 +244,7 @@ export default function BudgetManager({
             </article>
           )
         })}
-        {!errorMessage && budgets.length === 0 && (
+        {!fetching && !errorMessage && budgets.length === 0 && (
           <p className="empty-state">Aún no hay límites para este mes.</p>
         )}
       </div>

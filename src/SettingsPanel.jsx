@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import InterfaceIcon from './InterfaceIcon'
 
-export default function SettingsPanel({ open, onClose, sections }) {
+export default function SettingsPanel({ open, onClose, sections, footer }) {
   const [activeSection, setActiveSection] = useState(sections[0]?.id)
   const closeButtonRef = useRef(null)
   const dialogRef = useRef(null)
   const triggerRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     if (!open) return undefined
@@ -13,11 +17,12 @@ export default function SettingsPanel({ open, onClose, sections }) {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const focusFrame = requestAnimationFrame(() => closeButtonRef.current?.focus())
 
     const handleKeyDown = (event) => {
+      if (document.querySelector('dialog[open]')) return
       if (event.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
 
@@ -41,10 +46,11 @@ export default function SettingsPanel({ open, onClose, sections }) {
 
     return () => {
       document.body.style.overflow = previousOverflow
+      cancelAnimationFrame(focusFrame)
       window.removeEventListener('keydown', handleKeyDown)
       triggerRef.current?.focus?.()
     }
-  }, [onClose, open])
+  }, [open])
 
   if (!open) return null
 
@@ -60,7 +66,7 @@ export default function SettingsPanel({ open, onClose, sections }) {
             <h2 id="settings-title">Ajustes</h2>
             <p id="settings-description">Personaliza cómo registras y visualizas tus finanzas.</p>
           </div>
-          <button ref={closeButtonRef} type="button" onClick={onClose} className="settings-close" aria-label="Cerrar ajustes">×</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} className="settings-close" aria-label="Cerrar ajustes"><InterfaceIcon name="close" /></button>
         </header>
 
         <nav className="settings-tabs" role="tablist" aria-label="Secciones de ajustes">
@@ -106,6 +112,7 @@ export default function SettingsPanel({ open, onClose, sections }) {
         >
           {activeContent}
         </div>
+        {footer && <footer className="settings-footer">{footer}</footer>}
       </aside>
     </div>
   )

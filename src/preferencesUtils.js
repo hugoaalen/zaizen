@@ -1,6 +1,6 @@
 export const PREFERENCE_OPTIONS = {
-  theme: ['light', 'dark'],
-  monthlyChart: ['circular', 'barras', 'mosaico'],
+  theme: ['light', 'dark', 'system'],
+  monthlyChart: ['circular', 'barras', 'mosaico', 'ranking', 'balance'],
   yearlyChart: ['barras', 'lineas', 'area'],
   chartPalette: ['normal', 'pastel', 'vibrante'],
   accentColor: ['purple', 'blue', 'green', 'rose', 'orange'],
@@ -26,7 +26,7 @@ const getStorage = () => {
   }
 }
 
-const getSystemTheme = () => {
+export const getSystemTheme = () => {
   try {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   } catch {
@@ -35,8 +35,8 @@ const getSystemTheme = () => {
 }
 
 export const getDefaultPreferences = () => ({
-  theme: getSystemTheme(),
-  monthlyChart: 'circular',
+  theme: 'system',
+  monthlyChart: 'ranking',
   yearlyChart: 'barras',
   chartPalette: 'normal',
   accentColor: 'purple',

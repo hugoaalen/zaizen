@@ -11,7 +11,7 @@ import CollapsibleSection from './CollapsibleSection'
 import BankCsvImporter from './BankCsvImporter'
 import CategorizationRulesManager from './CategorizationRulesManager'
 import SavingsGoals from './SavingsGoals'
-import { LogoutIcon, MoonIcon, SettingsIcon, SunIcon } from './TopbarIcons'
+import { LogoutIcon, SettingsIcon } from './TopbarIcons'
 import { getRecurringOccurrenceDate } from './recurringUtils'
 import PrivacySettings from './PrivacySettings'
 import {
@@ -30,6 +30,9 @@ import {
 import { useOnlineStatus } from './useOnlineStatus'
 import BrandIcon from './BrandIcon'
 import ChevronIcon from './ChevronIcon'
+import InterfaceIcon from './InterfaceIcon'
+import { useFeedback } from './FeedbackProvider'
+import { describeDataError } from './dataErrorUtils'
 
 const ExpenseChart = lazy(() => import('./ExpenseChart'))
 const YearlyView = lazy(() => import('./YearlyView'))
@@ -62,12 +65,15 @@ const loadMonthlyTransactions = async (userId, year, month) => {
 }
 
 export default function Dashboard({ session, preferences, updatePreferences }) {
+  const { notify } = useFeedback()
   const online = useOnlineStatus()
   const [view, setView] = useState(preferences.initialView)
   const [transactions, setTransactions] = useState([])
   const [previousTransactions, setPreviousTransactions] = useState([])
   const [customCategories, setCustomCategories] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [fetching, setFetching] = useState(true)
+  const [signingOut, setSigningOut] = useState(false)
   const [rulesRefreshKey, setRulesRefreshKey] = useState(0)
 
   const chartTypeMonthly = preferences.monthlyChart
@@ -154,6 +160,9 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
     if (view !== 'monthly') return
     let active = true
     const loadTransactions = async () => {
+      setFetching(true)
+      setTransactions([])
+      setPreviousTransactions([])
       const cachePeriod = getMonthlyCachePeriod(selectedYear, selectedMonth)
       const [currentResult, previousResult] = await loadMonthlyTransactions(
         session.user.id,
@@ -162,16 +171,17 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
       )
 
       if (!active) return
+      setFetching(false)
       if (currentResult.error || previousResult.error) {
         const cached = loadOfflineData(session.user.id, 'monthly-transactions', cachePeriod)
         if (cached) {
           setTransactions(cached.data.current)
           setPreviousTransactions(cached.data.previous)
-          setErrorMessage('Sin conexión: mostrando la última copia guardada de este mes.')
+          setErrorMessage(navigator.onLine ? 'No se pudo actualizar: mostrando la última copia guardada de este mes.' : 'Sin conexión: mostrando la última copia guardada de este mes.')
         } else {
           setTransactions([])
           setPreviousTransactions([])
-          setErrorMessage('No hay datos guardados para consultar este mes sin conexión.')
+          setErrorMessage(describeDataError(currentResult.error || previousResult.error, 'cargar los movimientos'))
         }
       }
       else {
@@ -202,29 +212,22 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
   }
 
   const handleLogout = async () => {
+    if (signingOut) return
+    setSigningOut(true)
     clearOfflineData(session.user.id)
     const { error } = await supabase.auth.signOut()
-    if (error) setErrorMessage('No se pudo cerrar la sesión correctamente.')
+    if (error) notify('No se pudo cerrar la sesión. Vuelve a intentarlo.')
+    setSigningOut(false)
   }
-  const toggleTheme = () => updatePreferences({ theme: theme === 'light' ? 'dark' : 'light' })
   const goToCurrentMonth = () => {
     const today = new Date()
     setSelectedMonth(today.getMonth() + 1)
     setSelectedYear(today.getFullYear())
   }
   const shiftMonth = offset => {
-    setSelectedMonth(month => {
-      const nextMonth = month + offset
-      if (nextMonth < 1) {
-        setSelectedYear(year => year - 1)
-        return 12
-      }
-      if (nextMonth > 12) {
-        setSelectedYear(year => year + 1)
-        return 1
-      }
-      return nextMonth
-    })
+    const next = new Date(selectedYear, selectedMonth - 1 + offset, 1)
+    setSelectedYear(next.getFullYear())
+    setSelectedMonth(next.getMonth() + 1)
   }
 
   const settingsSections = [
@@ -280,11 +283,23 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
           </div>
 
           <div className="appearance-group">
+            <span>Tema</span>
+            <div className="segmented-control">
+              {[['light', 'Claro'], ['dark', 'Oscuro'], ['system', 'Sistema']].map(([value, label]) => (
+                <button key={value} aria-pressed={theme === value} className={theme === value ? 'active' : ''} onClick={() => updatePreferences({ theme: value })}>{label}</button>
+              ))}
+            </div>
+            <p className="appearance-help">Sistema adapta la apariencia al tema de este dispositivo.</p>
+          </div>
+
+          <div className="appearance-group">
             <span>Gráfico mensual</span>
             <div className="segmented-control">
               <button aria-pressed={chartTypeMonthly === 'circular'} className={chartTypeMonthly === 'circular' ? 'active' : ''} onClick={() => persistMonthlyType('circular')}>Circular</button>
               <button aria-pressed={chartTypeMonthly === 'barras'} className={chartTypeMonthly === 'barras' ? 'active' : ''} onClick={() => persistMonthlyType('barras')}>Barras</button>
               <button aria-pressed={chartTypeMonthly === 'mosaico'} className={chartTypeMonthly === 'mosaico' ? 'active' : ''} onClick={() => persistMonthlyType('mosaico')}>Mosaico</button>
+              <button aria-pressed={chartTypeMonthly === 'ranking'} className={chartTypeMonthly === 'ranking' ? 'active' : ''} onClick={() => persistMonthlyType('ranking')}>Ranking</button>
+              <button aria-pressed={chartTypeMonthly === 'balance'} className={chartTypeMonthly === 'balance' ? 'active' : ''} onClick={() => persistMonthlyType('balance')}>Balance</button>
             </div>
           </div>
 
@@ -389,7 +404,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
       .filter(item => item.occurrenceDate)
 
     if (scheduledSubscriptions.length === 0) {
-      alert("No hay movimientos recurrentes programados para este mes.");
+      notify('No hay movimientos recurrentes programados para este mes.');
       return;
     }
 
@@ -401,7 +416,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
     )
 
     if (subsToInsert.length === 0) {
-      alert("Ya has aplicado los movimientos fijos de este mes.");
+      notify('Ya has aplicado los movimientos fijos de este mes.');
       return;
     }
 
@@ -426,7 +441,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
     if (error) {
       setErrorMessage('No se pudieron aplicar los movimientos fijos.')
     } else {
-      alert(`Se han añadido ${subsToInsert.length} movimientos.`);
+      notify(`Se han añadido ${subsToInsert.length} movimientos.`);
       fetchTransactions();
     }
   }
@@ -444,19 +459,18 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
           </div>
         </div>
         <div className="dashboard-topbar-actions">
-          <button onClick={toggleTheme} className="topbar-icon" aria-label="Cambiar tema" title="Cambiar tema">
-            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-          </button>
           <button onClick={() => setShowSettings(true)} className="topbar-icon" aria-label="Abrir ajustes" title="Ajustes">
             <SettingsIcon />
-          </button>
-          <button onClick={handleLogout} className="topbar-icon dashboard-logout" aria-label="Cerrar sesión" title="Cerrar sesión">
-            <LogoutIcon />
           </button>
         </div>
       </header>
 
-      <SettingsPanel open={showSettings} onClose={closeSettings} sections={settingsSections} />
+      <SettingsPanel open={showSettings} onClose={closeSettings} sections={settingsSections} footer={
+        <div className="settings-account-footer">
+          <div><strong>Cuenta</strong><small>{session.user.email}</small></div>
+          <button type="button" className="btn-outline" disabled={signingOut} onClick={handleLogout}><LogoutIcon />{signingOut ? 'Cerrando…' : 'Cerrar sesión'}</button>
+        </div>
+      } />
       <TransactionModal
         open={Boolean(newTransactionType)}
         type={newTransactionType || 'expense'}
@@ -474,6 +488,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
       {view === 'monthly' ? (
         <main className="dashboard-main">
           {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
+          {fetching && <p role="status">Cargando movimientos…</p>}
 
           <section className="dashboard-toolbar">
             <div className="period-selector">
@@ -494,13 +509,13 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
 
             <div className="quick-actions">
               <button className="quick-action expense" onClick={() => setNewTransactionType('expense')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
-                <span>−</span> Añadir gasto
+                <span><InterfaceIcon name="minus" /></span> Añadir gasto
               </button>
               <button className="quick-action income" onClick={() => setNewTransactionType('income')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
-                <span>+</span> Añadir ingreso
+                <span><InterfaceIcon name="plus" /></span> Añadir ingreso
               </button>
               <button className="quick-action recurring" onClick={applyRecurring} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
-                <span>↻</span> Aplicar recurrentes
+                <span><InterfaceIcon name="repeat" /></span> Aplicar recurrentes
               </button>
             </div>
           </section>
@@ -511,14 +526,6 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
           />
-
-          <CollapsibleSection
-            title="Objetivos de ahorro"
-            description="Metas, aportaciones y progreso"
-            storageKey="dashboardSavingsGoalsOpen"
-          >
-            <SavingsGoals user={session.user} />
-          </CollapsibleSection>
 
           <div className="dashboard-content-grid">
             <CollapsibleSection
@@ -561,14 +568,18 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
               />
             </CollapsibleSection>
           </div>
+          <CollapsibleSection title="Objetivos de ahorro" description="Metas, aportaciones y progreso" storageKey="dashboardSavingsGoalsOpen" defaultOpen={false}>
+            <SavingsGoals user={session.user} />
+          </CollapsibleSection>
         </main>
       ) : (
         <main className="dashboard-main">
           <Suspense fallback={<p className="loading-state">Cargando vista anual...</p>}>
-            <YearlyView user={session.user} chartType={chartTypeYearly} palette={chartPalette} />
+            <YearlyView user={session.user} chartType={chartTypeYearly} palette={chartPalette} onSelectMonth={(year, month) => { setSelectedYear(year); setSelectedMonth(month); setView('monthly'); window.scrollTo({ top: 0, behavior: 'instant' }) }} />
           </Suspense>
         </main>
       )}
+      {view === 'monthly' && <button className="mobile-add-movement" disabled={!online} onClick={() => setNewTransactionType('expense')}><InterfaceIcon name="plus" />Añadir movimiento</button>}
     </div>
   )
 }

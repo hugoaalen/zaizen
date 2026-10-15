@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'zaizen-shell-v4'
+const CACHE_VERSION = 'zaizen-shell-v5'
 const CORE_ASSETS = [
   '/',
   '/index.html',

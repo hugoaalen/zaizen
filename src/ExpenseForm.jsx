@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useFeedback } from './FeedbackProvider'
 import { supabase } from './supabaseClient'
 import { CATEGORY_MAP, BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import DatePicker, { registerLocale } from "react-datepicker"
@@ -20,6 +21,7 @@ export default function ExpenseForm({
   initialType = 'expense',
   onCancel
 }) {
+  const { notify } = useFeedback()
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState(initialType)
@@ -73,6 +75,7 @@ export default function ExpenseForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading) return
     setLoading(true)
     setErrorMessage('')
 
@@ -90,6 +93,7 @@ export default function ExpenseForm({
     if (error) {
       setErrorMessage('No se pudo guardar el movimiento. Inténtalo de nuevo.')
     } else {
+      notify('Movimiento guardado.')
       setAmount(''); setDescription(''); setCategory('Varios')
       if (onTransactionAdded) onTransactionAdded()
     }

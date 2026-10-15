@@ -19,7 +19,7 @@ test('sanitizes unsupported preference values', () => {
     }),
     {
       theme: 'dark',
-      monthlyChart: 'circular',
+      monthlyChart: 'ranking',
       yearlyChart: 'area',
       chartPalette: 'vibrante',
       accentColor: 'blue',
@@ -70,4 +70,14 @@ test('maps application preferences to a user-scoped database row', () => {
   assert.equal(row.density, 'comfortable')
   assert.equal(row.initial_view, 'monthly')
   assert.match(row.updated_at, /^\d{4}-\d{2}-\d{2}T/)
+})
+
+test('defaults to system theme and preserves new chart choices through database mapping', () => {
+  assert.equal(sanitizePreferences({}).theme, 'system')
+  for (const monthlyChart of ['ranking', 'balance']) {
+    const preferences = sanitizePreferences({ theme: 'system', monthlyChart })
+    const restored = preferencesFromRow(preferencesToRow('user-1', preferences))
+    assert.equal(restored.theme, 'system')
+    assert.equal(restored.monthlyChart, monthlyChart)
+  }
 })

@@ -1,214 +1,94 @@
 import { useEffect, useState } from 'react'
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from 'recharts'
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts'
 import { supabase } from './supabaseClient'
-import { getMonthIndex } from './dateUtils'
 import ChevronIcon from './ChevronIcon'
+import InterfaceIcon from './InterfaceIcon'
+import { describeDataError } from './dataErrorUtils'
+import { summarizeYear, comparableYearTotals } from './yearlyUtils'
 
-const formatMoney = value => new Intl.NumberFormat('es-ES', {
-  style: 'currency',
-  currency: 'EUR'
-}).format(value)
+const money = value => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)
 
 function AnnualTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
-
-  return (
-    <div className="chart-tooltip annual-chart-tooltip">
-      <span>{label}</span>
-      {payload.map(item => (
-        <div className="chart-tooltip-row" key={item.dataKey}>
-          <i style={{ background: item.color }} />
-          <small>{item.name}</small>
-          <strong>{formatMoney(item.value)}</strong>
-        </div>
-      ))}
-    </div>
-  )
+  return <div className="chart-tooltip"><span>{label}</span>{payload.map(item => <div className="chart-tooltip-row" key={item.dataKey}><small>{item.name}</small><strong>{money(item.value)}</strong></div>)}</div>
 }
 
-export default function YearlyView({ user, chartType = 'barras', palette = 'normal' }) {
-  const [yearData, setYearData] = useState([])
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [totals, setTotals] = useState({ income: 0, expense: 0 })
-  const currentYear = new Date().getFullYear()
-
-  const colorIncome = palette === 'pastel' ? '#4ade80' : palette === 'vibrante' ? '#00c853' : 'var(--color-income)'
-  const colorExpense = palette === 'pastel' ? '#f87171' : palette === 'vibrante' ? '#ff1744' : 'var(--color-expense)'
-  const chartLabel = chartType === 'lineas'
-    ? 'Líneas'
-    : chartType === 'area'
-      ? 'Área'
-      : 'Barras'
+export default function YearlyView({ user, chartType = 'barras', palette = 'normal', onSelectMonth }) {
+  const [year, setYear] = useState(new Date().getFullYear())
+  const [transactions, setTransactions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
+  const [metric, setMetric] = useState('flows')
+  const today = new Date()
+  const rows = summarizeYear(transactions, year, today)
+  const totals = rows.reduce((sum, row) => ({ income: sum.income + row.income, expense: sum.expense + row.expense, balance: sum.balance + row.balance }), { income: 0, expense: 0, balance: 0 })
+  const comparison = comparableYearTotals(transactions, year, today)
+  const rate = totals.income ? Math.round(totals.balance / totals.income * 100) : null
+  const colorIncome = palette === 'pastel' ? '#86efac' : palette === 'vibrante' ? '#00c853' : 'var(--color-income)'
+  const colorExpense = palette === 'pastel' ? '#fca5a5' : palette === 'vibrante' ? '#ff1744' : 'var(--color-expense)'
+  const chartRows = rows.map(row => ({ ...row, income: row.future ? null : row.income, expense: row.future ? null : row.expense, balance: row.future ? null : row.balance }))
+  const best = rows.filter(row => !row.future && row.count).reduce((best, row) => !best || row.balance > best.balance ? row : best, null)
+  const elapsedMonths = year < today.getFullYear() ? 12 : year === today.getFullYear() ? today.getMonth() + 1 : 0
+  const currentExpenses = rows.filter(row => !row.future).reduce((sum, row) => sum + row.expense, 0)
 
   useEffect(() => {
     let active = true
-
-    const loadYearlyData = async () => {
-      let query = supabase
-        .from('transactions')
-        .select('amount,type,date')
-        .gte('date', `${selectedYear}-01-01`)
-        .lte('date', `${selectedYear}-12-31`)
-
-      if (user?.id) query = query.eq('user_id', user.id)
-
-      const { data, error } = await query
-      if (error || !active) return
-
-      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-      const chartData = months.map(name => ({ name, ingresos: 0, gastos: 0 }))
-      let totalI = 0
-      let totalE = 0
-
-      data.forEach(transaction => {
-        const monthIndex = getMonthIndex(transaction.date)
-        const amount = Number(transaction.amount)
-        if (transaction.type === 'income') {
-          chartData[monthIndex].ingresos += amount
-          totalI += amount
-        } else {
-          chartData[monthIndex].gastos += amount
-          totalE += amount
-        }
-      })
-
-      setYearData(chartData)
-      setTotals({ income: totalI, expense: totalE })
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      setTransactions([])
+      const result = await supabase.from('transactions').select('amount,type,date').eq('user_id', user.id).gte('date', `${year - 1}-01-01`).lte('date', `${year}-12-31`)
+      if (!active) return
+      setLoading(false)
+      if (result.error) setError(describeDataError(result.error, 'cargar el resumen anual'))
+      else setTransactions(result.data || [])
     }
-
-    loadYearlyData()
+    load()
     return () => { active = false }
-  }, [selectedYear, user?.id])
+  }, [user.id, year, retry])
 
-  const netSavings = totals.income - totals.expense
-  const activeExpenseMonths = yearData.filter(month => month.gastos > 0).length
-  const averageMonthlyExpense = activeExpenseMonths ? totals.expense / activeExpenseMonths : 0
-  const savingsRate = totals.income ? Math.round((netSavings / totals.income) * 100) : 0
-  const hasYearData = totals.income > 0 || totals.expense > 0
-  const bestMonth = hasYearData
-    ? yearData.reduce((best, month) => {
-        const balance = month.ingresos - month.gastos
-        return !best || balance > best.balance ? { name: month.name, balance } : best
-      }, null)
-    : null
+  const axes = <>
+    <CartesianGrid vertical={false} stroke="var(--border-color)" strokeDasharray="2 6" />
+    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+    <Tooltip content={<AnnualTooltip />} />
+  </>
+  const common = { data: chartRows, margin: { top: 16, right: 10, bottom: 0, left: -10 } }
+  const series = [['income', 'Ingresos', colorIncome], ['expense', 'Gastos', colorExpense]]
 
-  const chartProps = {
-    data: yearData,
-    margin: { top: 12, right: 10, left: -12, bottom: 0 }
-  }
-
-  const chartContent = (
-    <>
-      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
-      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
-      <Tooltip content={<AnnualTooltip />} cursor={{ fill: 'var(--input-bg)' }} />
-      <Legend verticalAlign="top" height={42} wrapperStyle={{ fontSize: '13px' }} />
-    </>
-  )
-
-  return (
-    <div className="yearly-view">
-      <section className="yearly-toolbar">
-        <div>
-          <span className="section-kicker">Resumen anual</span>
-          <h2>Tu año financiero</h2>
-          <p>Compara ingresos, gastos y capacidad de ahorro mes a mes.</p>
-        </div>
-        <div className="yearly-period">
-          <div className="year-stepper">
-            <button type="button" onClick={() => setSelectedYear(year => year - 1)} aria-label="Año anterior"><ChevronIcon /></button>
-            <strong>{selectedYear}</strong>
-            <button type="button" onClick={() => setSelectedYear(year => year + 1)} aria-label="Año siguiente"><ChevronIcon direction="right" /></button>
-          </div>
-          {selectedYear !== currentYear && (
-            <button className="btn-outline" type="button" onClick={() => setSelectedYear(currentYear)}>Este año</button>
-          )}
-        </div>
-      </section>
-
+  return <div className="yearly-view">
+    <section className="yearly-toolbar">
+      <div><span className="section-kicker">Resumen anual</span><h2>Tu año financiero</h2><p>Ingresos, gastos y ahorro, mes a mes.</p></div>
+      <div className="yearly-period"><div className="year-stepper">
+        <button aria-label="Año anterior" onClick={() => setYear(year - 1)}><ChevronIcon /></button><strong>{year}</strong><button aria-label="Año siguiente" onClick={() => setYear(year + 1)}><ChevronIcon direction="right" /></button>
+      </div>{year !== today.getFullYear() && <button className="btn-outline" onClick={() => setYear(today.getFullYear())}>Este año</button>}</div>
+    </section>
+    {loading ? <p role="status" className="loading-state">Cargando resumen anual…</p> : error ? <div role="alert"><p>{error}</p><button className="btn-outline" onClick={() => setRetry(retry + 1)}>Reintentar</button></div> : <>
       <section className="yearly-summary">
-        <div className="yearly-balance">
-          <span>Balance del año</span>
-          <strong className={netSavings >= 0 ? 'positive' : 'negative'}>{formatMoney(netSavings)}</strong>
-          <p>{savingsRate}% de los ingresos conservados</p>
-        </div>
-        <div className="yearly-metrics">
-          <article>
-            <span>Ingresos totales</span>
-            <strong className="positive">{formatMoney(totals.income)}</strong>
-          </article>
-          <article>
-            <span>Gastos totales</span>
-            <strong className="negative">{formatMoney(totals.expense)}</strong>
-          </article>
-          <article>
-            <span>Gasto medio mensual</span>
-            <strong>{formatMoney(averageMonthlyExpense)}</strong>
-          </article>
-        </div>
-        <div className="yearly-highlight">
-          <span>Mejor balance mensual</span>
-          <strong>{bestMonth?.name || '--'}</strong>
-          <small>{bestMonth ? formatMoney(bestMonth.balance) : 'Sin datos'}</small>
-        </div>
+        <div className="yearly-balance"><span>Ahorro neto del año</span><strong className={totals.balance >= 0 ? 'positive' : 'negative'}>{money(totals.balance)}</strong><p>{rate === null ? 'Sin ingresos para calcular tasa de ahorro' : `Tasa de ahorro: ${rate}%`}</p></div>
+        <div className="yearly-metrics"><article><span>Ingresos</span><strong>{money(totals.income)}</strong></article><article><span>Gastos</span><strong>{money(totals.expense)}</strong></article><article><span>Tasa de ahorro</span><strong>{rate === null ? '—' : `${rate}%`}</strong></article></div>
+        <div className="yearly-highlight"><span>Mejor mes con actividad</span><strong>{best?.fullName || 'Sin actividad'}</strong><small>{best ? money(best.balance) : ''} · Gasto medio: {elapsedMonths ? money(currentExpenses / elapsedMonths) : '—'}/mes</small></div>
       </section>
-
+      {comparison && <div className="yearly-comparison card"><h3>Frente a {year - 1}</h3><p>{year === today.getFullYear() ? `Mismo periodo hasta ${new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(today)} de cada año.` : 'Comparación de años completos.'}</p>{comparison.previous.income || comparison.previous.expense ? <p>Gasto: {money(Math.abs(comparison.current.expense - comparison.previous.expense))} {comparison.current.expense > comparison.previous.expense ? 'más' : 'menos'}. Ahorro neto: {money(comparison.current.balance - comparison.previous.balance)} de diferencia.</p> : <p>No hay movimientos del año anterior para comparar.</p>}</div>}
       <section className="yearly-chart-card">
-        <header>
-          <div>
-            <h3>Evolución mensual</h3>
-            <p>Ingresos y gastos registrados durante {selectedYear}.</p>
-          </div>
-          <span>{chartLabel}</span>
-        </header>
-        <div className="yearly-chart-canvas">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 900, height: 360 }}>
-            {chartType === 'lineas' ? (
-              <LineChart {...chartProps}>
-                {chartContent}
-                <Line type="monotone" dataKey="ingresos" stroke={colorIncome} strokeWidth={3} dot={{ fill: colorIncome, strokeWidth: 0 }} name="Ingresos" />
-                <Line type="monotone" dataKey="gastos" stroke={colorExpense} strokeWidth={3} dot={{ fill: colorExpense, strokeWidth: 0 }} name="Gastos" />
-              </LineChart>
-            ) : chartType === 'area' ? (
-              <AreaChart {...chartProps}>
-                <defs>
-                  <linearGradient id="annualIncomeArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={colorIncome} stopOpacity={0.38} />
-                    <stop offset="95%" stopColor={colorIncome} stopOpacity={0.03} />
-                  </linearGradient>
-                  <linearGradient id="annualExpenseArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={colorExpense} stopOpacity={0.34} />
-                    <stop offset="95%" stopColor={colorExpense} stopOpacity={0.03} />
-                  </linearGradient>
-                </defs>
-                {chartContent}
-                <Area type="monotone" dataKey="ingresos" stroke={colorIncome} strokeWidth={3} fill="url(#annualIncomeArea)" name="Ingresos" />
-                <Area type="monotone" dataKey="gastos" stroke={colorExpense} strokeWidth={3} fill="url(#annualExpenseArea)" name="Gastos" />
-              </AreaChart>
-            ) : (
-              <BarChart {...chartProps}>
-                {chartContent}
-                <Bar dataKey="ingresos" fill={colorIncome} radius={[5, 5, 0, 0]} name="Ingresos" />
-                <Bar dataKey="gastos" fill={colorExpense} radius={[5, 5, 0, 0]} name="Gastos" />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
-        </div>
+        <header><div><h3>{metric === 'flows' ? 'Ingresos y gastos' : 'Ahorro de cada mes'}</h3><p>Meses futuros sin representar como ceros. Consulta registros previstos en el detalle.</p></div></header>
+        <div className="segmented-control two-options yearly-metric-switch">{[['flows', 'Ingresos y gastos'], ['savings', 'Ahorro mensual']].map(([value, label]) => <button key={value} aria-pressed={metric === value} className={metric === value ? 'active' : ''} onClick={() => setMetric(value)}>{label}</button>)}</div>
+        <div className="annual-savings-key"><span><i style={{ background: colorIncome }} />{metric === 'savings' ? 'Balance positivo' : 'Ingresos'}</span><span><i style={{ background: colorExpense }} />{metric === 'savings' ? 'Balance negativo' : 'Gastos'}</span></div>
+        {!rows.some(row => row.count) ? <p className="empty-state">Todavía no hay movimientos este año.</p> : <div className="yearly-chart-canvas"><ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          {metric === 'savings' ? <BarChart {...common}>{axes}<Bar dataKey="balance" name="Ahorro neto" radius={[5, 5, 0, 0]} isAnimationActive={false}>{chartRows.map(row => <Cell key={row.month} fill={row.balance >= 0 ? colorIncome : colorExpense} />)}</Bar></BarChart> : chartType === 'lineas' ? <LineChart {...common}>{axes}{series.map(([key, name, color]) => <Line key={key} dataKey={key} name={name} stroke={color} strokeWidth={2.5} dot={false} isAnimationActive={false} />)}</LineChart> : chartType === 'area' ? <AreaChart {...common}>{axes}{series.map(([key, name, color]) => <Area key={key} dataKey={key} name={name} stroke={color} fill={color} fillOpacity={.12} strokeWidth={2.5} isAnimationActive={false} />)}</AreaChart> : <BarChart {...common}>{axes}{series.map(([key, name, color]) => <Bar key={key} dataKey={key} name={name} fill={color} maxBarSize={24} radius={[5, 5, 0, 0]} isAnimationActive={false} />)}</BarChart>}
+        </ResponsiveContainer></div>}
       </section>
-    </div>
-  )
+      <section className="card annual-month-details"><h3>Detalle por mes</h3><p>Selecciona un mes para abrir sus movimientos.</p>
+        <div className="annual-month-list">{rows.map(row => (
+          <button key={row.month} onClick={() => onSelectMonth?.(year, row.month)} className={`annual-month-tile ${row.balance > 0 ? 'surplus' : row.balance < 0 ? 'deficit' : 'neutral'} ${row.future ? 'future' : ''}`} aria-label={`Abrir ${row.fullName} de ${year}. Ingresos ${money(row.income)}, gastos ${money(row.expense)}, balance ${money(row.balance)}`}>
+            <span className="annual-month-title"><strong>{row.fullName}</strong><InterfaceIcon name="expense" /></span>
+            <span className="annual-month-status">{row.future ? 'Mes futuro · previsto' : row.count ? `${row.count} movimientos` : 'Sin actividad'}</span>
+            <span className={`annual-month-balance ${row.balance >= 0 ? 'positive' : 'negative'}`}>{money(row.balance)}<small>Balance del mes</small></span>
+            <span className="annual-month-flows"><span><small>Ingresos</small>{money(row.income)}</span><span><small>Gastos</small>{money(row.expense)}</span></span>
+          </button>
+        ))}</div>
+      </section>
+    </>}
+  </div>
 }

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
+import InterfaceIcon from './InterfaceIcon'
+import { useFeedback } from './FeedbackProvider'
 
 export default function CategorizationRulesManager({ user, refreshKey = 0 }) {
   const [rules, setRules] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const { confirm, notify } = useFeedback()
 
   const loadRules = async () => {
     const { data, error } = await supabase
@@ -43,7 +46,7 @@ export default function CategorizationRulesManager({ user, refreshKey = 0 }) {
 
   const deleteRule = async (id) => {
     const rule = rules.find(item => item.id === id)
-    if (!window.confirm(`¿Eliminar la regla para ${rule?.pattern || 'este comercio'}?`)) return
+    if (!await confirm(`¿Eliminar la regla para ${rule?.pattern || 'este comercio'}? Dejará de aplicarse a nuevas importaciones.`)) return
 
     const { error } = await supabase
       .from('categorization_rules')
@@ -52,7 +55,7 @@ export default function CategorizationRulesManager({ user, refreshKey = 0 }) {
       .eq('user_id', user.id)
 
     if (error) setErrorMessage('No se pudo eliminar la regla.')
-    else loadRules()
+    else { notify('Regla eliminada.'); loadRules() }
   }
 
   return (
@@ -84,7 +87,7 @@ export default function CategorizationRulesManager({ user, refreshKey = 0 }) {
               onClick={() => deleteRule(rule.id)}
               aria-label={`Eliminar regla ${rule.pattern}`}
             >
-              ×
+              <InterfaceIcon name="delete" />
             </button>
           </div>
         ))}

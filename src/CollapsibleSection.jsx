@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import InterfaceIcon from './InterfaceIcon'
 
 export default function CollapsibleSection({
   title,
@@ -27,7 +28,7 @@ export default function CollapsibleSection({
           <strong>{title}</strong>
           {description && <small>{description}</small>}
         </span>
-        <i>{open ? '−' : '+'}</i>
+        <i className={open ? 'section-chevron expanded' : 'section-chevron'}><InterfaceIcon name="chevron" /></i>
       </button>
       {open && <div className="dashboard-section-content">{children}</div>}
     </section>

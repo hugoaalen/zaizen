@@ -7,6 +7,9 @@ import {
   RECURRING_FREQUENCIES
 } from './recurringUtils'
 import DateField from './DateField'
+import InterfaceIcon from './InterfaceIcon'
+import { useFeedback } from './FeedbackProvider'
+import { describeDataError } from './dataErrorUtils'
 import { getPreferredCategoryName, mergeCategoryNames } from './categoryUtils'
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -30,6 +33,10 @@ export default function RecurringManager({ user, customCategories }) {
   const [form, setForm] = useState(createInitialForm)
   const [editingId, setEditingId] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [fetching, setFetching] = useState(true)
+  const { confirm, notify } = useFeedback()
 
   const fetchSubs = async () => {
     const { data, error } = await supabase
@@ -50,7 +57,8 @@ export default function RecurringManager({ user, customCategories }) {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
       if (!active) return
-      if (error) setErrorMessage('No se pudieron cargar los movimientos fijos.')
+      setFetching(false)
+      if (error) setErrorMessage(describeDataError(error, 'cargar los recurrentes'))
       else setSubs(data)
     }
     loadSubscriptions()
@@ -74,10 +82,12 @@ export default function RecurringManager({ user, customCategories }) {
   const resetForm = () => {
     setForm(createInitialForm())
     setEditingId(null)
+    setFormOpen(false)
   }
 
   const addSub = async (e) => {
     e.preventDefault()
+    if (saving) return
     setErrorMessage('')
     const formData = new FormData(e.currentTarget)
     const payload = {
@@ -95,12 +105,15 @@ export default function RecurringManager({ user, customCategories }) {
     const query = editingId
       ? supabase.from('subscriptions').update(payload).eq('id', editingId).eq('user_id', user.id)
       : supabase.from('subscriptions').insert([payload])
+    setSaving(true)
     const { error } = await query
+    setSaving(false)
     if (error) {
       setErrorMessage('No se pudo guardar el movimiento recurrente. Revisa los datos.')
       return
     }
     resetForm()
+    notify(editingId ? 'Recurrente actualizado.' : 'Recurrente añadido.')
     fetchSubs()
   }
 
@@ -110,6 +123,7 @@ export default function RecurringManager({ user, customCategories }) {
       : BASE_EXPENSE_CATEGORIES
 
     setEditingId(subscription.id)
+    setFormOpen(true)
     setForm({
       amount: String(subscription.amount),
       description: subscription.description,
@@ -133,12 +147,13 @@ export default function RecurringManager({ user, customCategories }) {
       setErrorMessage('No se pudo cambiar el estado del movimiento recurrente.')
       return
     }
+    notify(subscription.active === false ? 'Recurrente reactivado.' : 'Recurrente pausado.')
     fetchSubs()
   }
 
   const deleteSub = async (id) => {
     const subscription = subs.find(item => item.id === id)
-    if (!window.confirm(`¿Eliminar el movimiento recurrente ${subscription?.description || ''}?`)) return
+    if (!await confirm(`¿Eliminar el recurrente «${subscription?.description || ''}»? Los movimientos ya registrados se conservarán.`)) return
 
     const { error } = await supabase
       .from('subscriptions')
@@ -150,6 +165,7 @@ export default function RecurringManager({ user, customCategories }) {
       return
     }
     fetchSubs()
+    notify('Recurrente eliminado.')
   }
 
   return (
@@ -162,10 +178,13 @@ export default function RecurringManager({ user, customCategories }) {
         <span className="settings-count">{subs.filter(subscription => subscription.active !== false).length}</span>
       </div>
 
-      <form onSubmit={addSub} className="settings-form recurring-form">
+      <div className="recurring-create-toolbar">
+        <button className="btn-outline" aria-expanded={formOpen} aria-controls="recurring-editor" onClick={() => { if (formOpen) resetForm(); else setFormOpen(true) }}>{formOpen ? 'Cerrar formulario' : 'Añadir recurrente'}</button>
+      </div>
+      {formOpen && <form id="recurring-editor" onSubmit={addSub} className="settings-form recurring-form">
         <label className="wide-field">
           Nombre
-          <input className="input-minimal" name="description" maxLength={MAX_DESCRIPTION_LENGTH} placeholder="Ej: Alquiler" value={form.description} onChange={e => updateForm('description', e.target.value)} required />
+          <input autoFocus className="input-minimal" name="description" maxLength={MAX_DESCRIPTION_LENGTH} placeholder="Ej: Alquiler" value={form.description} onChange={e => updateForm('description', e.target.value)} required />
         </label>
         <label>
           Importe
@@ -227,14 +246,15 @@ export default function RecurringManager({ user, customCategories }) {
         )}
         <div className="recurring-form-actions">
           {editingId && <button type="button" className="btn-outline" onClick={resetForm}>Cancelar</button>}
-          <button type="submit" className="btn-minimal settings-add-button">
-            {editingId ? 'Guardar cambios' : 'Añadir recurrente'}
+          <button type="submit" disabled={saving} className="btn-minimal settings-add-button">
+            {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Añadir recurrente'}
           </button>
         </div>
-      </form>
+      </form>}
 
       <div className="recurring-list">
-        {subs.length === 0 && <p className="settings-empty">No hay movimientos recurrentes configurados.</p>}
+        {fetching && <p role="status" className="settings-empty">Cargando recurrentes…</p>}
+        {!fetching && !errorMessage && subs.length === 0 && <p className="settings-empty">No hay movimientos recurrentes configurados.</p>}
         {subs.map(s => (
           <div key={s.id} className={`recurring-row ${s.active === false ? 'paused' : ''}`}>
             <span className={`category-type-dot ${s.type === 'income' ? 'income' : 'expense'}`} />
@@ -254,11 +274,11 @@ export default function RecurringManager({ user, customCategories }) {
               {s.active === false ? 'Pausado' : getFrequencyLabel(s.frequency || (s.month ? 'yearly' : 'monthly'))}
             </span>
             <div className="recurring-row-actions">
-              <button className="icon-button" onClick={() => editSub(s)} aria-label={`Editar recurrente ${s.description}`} title="Editar">✎</button>
+              <button className="icon-button" onClick={() => editSub(s)} aria-label={`Editar recurrente ${s.description}`} title="Editar"><InterfaceIcon name="edit" /></button>
               <button className="icon-button" onClick={() => toggleSub(s)} aria-label={`${s.active === false ? 'Reactivar' : 'Pausar'} recurrente ${s.description}`} title={s.active === false ? 'Reactivar' : 'Pausar'}>
-                {s.active === false ? '▶' : 'Ⅱ'}
+                <InterfaceIcon name={s.active === false ? 'play' : 'pause'} />
               </button>
-              <button className="icon-button" onClick={() => deleteSub(s.id)} aria-label={`Eliminar recurrente ${s.description}`} title="Eliminar">×</button>
+              <button className="icon-button destructive" onClick={() => deleteSub(s.id)} aria-label={`Eliminar recurrente ${s.description}`} title="Eliminar"><InterfaceIcon name="delete" /></button>
             </div>
           </div>
         ))}

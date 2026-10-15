@@ -6,6 +6,7 @@ import PwaStatus from './PwaStatus'
 import { clearAllOfflineData } from './offlineCache'
 import {
   loadLocalPreferences,
+  getSystemTheme,
   preferencesFromRow,
   preferencesToRow,
   sanitizePreferences,
@@ -17,6 +18,8 @@ function App() {
   const [authReady, setAuthReady] = useState(false)
   const [preferences, setPreferences] = useState(loadLocalPreferences)
   const preferencesRef = useRef(preferences)
+  const [systemTheme, setSystemTheme] = useState(getSystemTheme)
+  const resolvedTheme = preferences.theme === 'system' ? systemTheme : preferences.theme
   const userId = session?.user?.id
   const [recoveryMode, setRecoveryMode] = useState(
     () => window.location.hash.includes('type=recovery')
@@ -24,11 +27,20 @@ function App() {
   
   useEffect(() => {
     preferencesRef.current = preferences
-    document.documentElement.setAttribute('data-theme', preferences.theme)
+    document.documentElement.setAttribute('data-theme', resolvedTheme)
     document.documentElement.setAttribute('data-accent', preferences.accentColor)
     document.documentElement.setAttribute('data-density', preferences.density)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#101013' : '#f5f5f7')
     saveLocalPreferences(preferences)
-  }, [preferences])
+  }, [preferences, resolvedTheme])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const update = () => setSystemTheme(media.matches ? 'dark' : 'light')
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession()

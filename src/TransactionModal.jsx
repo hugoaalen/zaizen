@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import ExpenseForm from './ExpenseForm'
+import InterfaceIcon from './InterfaceIcon'
 
 export default function TransactionModal({
   open,
@@ -14,6 +15,7 @@ export default function TransactionModal({
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const handleKeyDown = event => {
+      if (document.querySelector('dialog[open]')) return
       if (event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -33,7 +35,7 @@ export default function TransactionModal({
             <span className="settings-eyebrow">Nuevo movimiento</span>
             <h2 id="transaction-modal-title">{type === 'income' ? 'Añadir ingreso' : 'Añadir gasto'}</h2>
           </div>
-          <button className="settings-close" onClick={onClose} aria-label="Cerrar formulario">×</button>
+          <button className="settings-close" onClick={onClose} aria-label="Cerrar formulario"><InterfaceIcon name="close" /></button>
         </header>
         <ExpenseForm
           key={type}
