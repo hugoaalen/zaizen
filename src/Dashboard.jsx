@@ -517,11 +517,11 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
             </div>
 
             <div className="quick-actions">
-              <button className="quick-action expense" onClick={() => setNewTransactionType('expense')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
-                <span><InterfaceIcon name="minus" /></span> Añadir gasto
-              </button>
               <button className="quick-action income" onClick={() => setNewTransactionType('income')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
                 <span><InterfaceIcon name="plus" /></span> Añadir ingreso
+              </button>
+              <button className="quick-action expense" onClick={() => setNewTransactionType('expense')} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
+                <span><InterfaceIcon name="minus" /></span> Añadir gasto
               </button>
               <button className="quick-action recurring" onClick={applyRecurring} disabled={!online} title={!online ? 'Disponible cuando recuperes la conexión' : undefined}>
                 <span><InterfaceIcon name="repeat" /></span> Aplicar recurrentes
