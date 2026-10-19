@@ -6,6 +6,7 @@ import InterfaceIcon from './InterfaceIcon'
 import { describeDataError } from './dataErrorUtils'
 import { summarizeYear, comparableYearTotals } from './yearlyUtils'
 import { fetchAllRows } from './paginationUtils'
+import AnnualCategories from './AnnualCategories'
 
 const money = value => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)
 
@@ -39,7 +40,7 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
       setLoading(true)
       setError('')
       setTransactions([])
-      const result = await fetchAllRows(() => supabase.from('transactions').select('amount,type,date').eq('user_id', user.id).gte('date', `${year - 1}-01-01`).lte('date', `${year}-12-31`).order('id'))
+      const result = await fetchAllRows(() => supabase.from('transactions').select('amount,type,date,category').eq('user_id', user.id).gte('date', `${year - 1}-01-01`).lte('date', `${year}-12-31`).order('id'))
       if (!active) return
       setLoading(false)
       if (result.error) setError(describeDataError(result.error, 'cargar el resumen anual'))
@@ -80,6 +81,7 @@ export default function YearlyView({ user, chartType = 'barras', palette = 'norm
           {metric === 'savings' ? <BarChart {...common}>{axes}<Bar dataKey="balance" name="Ahorro neto" radius={[5, 5, 0, 0]} isAnimationActive={false}>{chartRows.map(row => <Cell key={row.month} fill={row.balance >= 0 ? colorIncome : colorExpense} />)}</Bar></BarChart> : chartType === 'lineas' ? <LineChart {...common}>{axes}{series.map(([key, name, color]) => <Line key={key} dataKey={key} name={name} stroke={color} strokeWidth={2.5} dot={false} isAnimationActive={false} />)}</LineChart> : chartType === 'area' ? <AreaChart {...common}>{axes}{series.map(([key, name, color]) => <Area key={key} dataKey={key} name={name} stroke={color} fill={color} fillOpacity={.12} strokeWidth={2.5} isAnimationActive={false} />)}</AreaChart> : <BarChart {...common}>{axes}{series.map(([key, name, color]) => <Bar key={key} dataKey={key} name={name} fill={color} maxBarSize={24} radius={[5, 5, 0, 0]} isAnimationActive={false} />)}</BarChart>}
         </ResponsiveContainer></div>}
       </section>
+      <AnnualCategories transactions={transactions} year={year} />
       <section className="card annual-month-details"><h3>Detalle por mes</h3><p>Selecciona un mes para abrir sus movimientos.</p>
         <div className="annual-month-list">{rows.map(row => (
           <button key={row.month} onClick={() => onSelectMonth?.(year, row.month)} className={`annual-month-tile ${row.balance > 0 ? 'surplus' : row.balance < 0 ? 'deficit' : 'neutral'} ${row.future ? 'future' : ''}`} aria-label={`Abrir ${row.fullName} de ${year}. Ingresos ${money(row.income)}, gastos ${money(row.expense)}, balance ${money(row.balance)}`}>

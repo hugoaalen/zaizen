@@ -1,4 +1,21 @@
 import { summarizeTransactions } from './insightUtils.js'
+import { groupTransactionsByCategory, normalizeCategoryKey } from './categoryUtils.js'
+
+export function summarizeYearCategories(transactions, year, type, today = new Date()) {
+  const entries = transactions.filter(item => Number(item.date.slice(0, 4)) === year && item.type === type)
+  const months = summarizeYear([], year, today)
+  return groupTransactionsByCategory(entries, type).map(category => {
+    const rows = months.map(month => {
+      const value = entries.filter(item => Number(item.date.slice(5, 7)) === month.month && normalizeCategoryKey(item.category || 'Varios') === normalizeCategoryKey(category.name))
+        .reduce((sum, item) => sum + Number(item.amount), 0)
+      return { ...month, value, actual: month.future ? null : value }
+    })
+    const observed = rows.filter(row => !row.future)
+    const total = observed.reduce((sum, row) => sum + row.value, 0)
+    const peak = observed.reduce((best, row) => row.value > (best?.value || 0) ? row : best, null)
+    return { ...category, rows, total, average: observed.length ? total / observed.length : null, peak }
+  }).sort((a, b) => b.total - a.total)
+}
 
 export function summarizeYear(transactions, year, today = new Date()) {
   return Array.from({ length: 12 }, (_, index) => {
