@@ -250,6 +250,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
       icon: <RecurringIcon />,
       content: (
         <RecurringManager
+          paymentMethodsEnabled={preferences.paymentMethods === 'on'}
           user={session.user}
           customCategories={customCategories}
         />
@@ -294,6 +295,13 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
             <p className="appearance-help">Sistema adapta la apariencia al tema de este dispositivo.</p>
           </div>
 
+          <div className="appearance-group">
+            <span>Registro de movimientos</span>
+            <label className="budget-recurring-toggle payment-method-setting">
+              <span><strong>Métodos de pago y cobro</strong><small>Añade efectivo, tarjeta, Bizum o transferencia a tus movimientos. Siempre opcional.</small></span>
+              <input type="checkbox" role="switch" checked={preferences.paymentMethods === 'on'} onChange={event => updatePreferences({ paymentMethods: event.target.checked ? 'on' : 'off' })} />
+            </label>
+          </div>
           <div className="appearance-group">
             <span>Gráfico mensual</span>
             <div className="monthly-chart-options" role="group" aria-label="Gráfico mensual">
@@ -432,6 +440,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
     const finalData = subsToInsert.map(({ subscription, occurrenceDate }) => ({
       user_id: session.user.id,
       amount: subscription.amount,
+      ...(subscription.payment_method ? { payment_method: subscription.payment_method } : {}),
       description: `[Recurrente] ${subscription.description}`,
       type: subscription.type,
       date: occurrenceDate,
@@ -481,6 +490,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
         </div>
       } />
       <TransactionModal
+        paymentMethodsEnabled={preferences.paymentMethods === 'on'}
         open={Boolean(newTransactionType)}
         type={newTransactionType || 'expense'}
         user={session.user}
@@ -570,6 +580,7 @@ export default function Dashboard({ session, preferences, updatePreferences }) {
               className="dashboard-grid-activity"
             >
               <TransactionList
+                paymentMethodsEnabled={preferences.paymentMethods === 'on'}
                 transactions={transactions}
                 user={session.user}
                 customCategories={customCategories}

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import PaymentMethodField from './PaymentMethodField'
+import { paymentMethodLabel } from './paymentMethods'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import { parseISO } from 'date-fns'
@@ -48,7 +50,7 @@ function ActionIcon({ type }) {
   return <svg {...props}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5" /></svg>
 }
 
-export default function TransactionList({ transactions, user, customCategories, onTransactionDeleted }) {
+export default function TransactionList({ transactions, user, customCategories, onTransactionDeleted, paymentMethodsEnabled = false }) {
   const { confirm, notify } = useFeedback()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -121,7 +123,8 @@ export default function TransactionList({ transactions, user, customCategories, 
         amount: Number(editing.amount),
         type: editing.type,
         category: editing.category,
-        date: editing.date
+        date: editing.date,
+        ...(paymentMethodsEnabled ? { payment_method: editing.payment_method || null } : {})
       })
       .eq('id', editing.id)
       .eq('user_id', user.id)
@@ -140,6 +143,7 @@ export default function TransactionList({ transactions, user, customCategories, 
     const { error } = await supabase.from('transactions').insert([{
       user_id: user.id,
       amount: transaction.amount,
+      ...(transaction.payment_method ? { payment_method: transaction.payment_method } : {}),
       description: transaction.description,
       type: transaction.type,
       category: transaction.category || 'Varios',
@@ -205,6 +209,7 @@ export default function TransactionList({ transactions, user, customCategories, 
               <strong>{transaction.description}</strong>
               <div>
                 <span>{transaction.category || 'Varios'}</span>
+                {paymentMethodsEnabled && transaction.payment_method && <span>{paymentMethodLabel(transaction.payment_method)}</span>}
               </div>
             </div>
             <div className="transaction-side">
@@ -272,6 +277,7 @@ export default function TransactionList({ transactions, user, customCategories, 
                 </select>
               </label>
             </div>
+            {paymentMethodsEnabled && <PaymentMethodField type={editing.type} value={editing.payment_method} onChange={value => setEditing({ ...editing, payment_method: value })} />}
             <div className="modal-actions">
               <button type="button" className="btn-outline" onClick={() => setEditing(null)}>Cancelar</button>
               <button type="submit" disabled={saving} className="btn-minimal">{saving ? 'Guardando…' : 'Guardar cambios'}</button>

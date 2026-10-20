@@ -1,3 +1,5 @@
+import { paymentMethodLabel } from './paymentMethods.js'
+
 const CSV_COLUMNS = [
   ['date', 'Fecha'],
   ['description', 'Descripción'],
@@ -13,9 +15,13 @@ const escapeCsvValue = value => {
 }
 
 export const transactionsToCsv = transactions => {
-  const header = CSV_COLUMNS.map(([, label]) => label).join(';')
+  const columns = transactions.some(item => item.payment_method)
+    ? [...CSV_COLUMNS, ['payment_method', 'Método de pago/cobro']]
+    : CSV_COLUMNS
+  const header = columns.map(([, label]) => label).join(';')
   const rows = transactions.map(transaction =>
-    CSV_COLUMNS.map(([key]) => {
+    columns.map(([key]) => {
+      if (key === 'payment_method') return paymentMethodLabel(transaction[key])
       if (key === 'type') return transaction.type === 'income' ? 'Ingreso' : 'Gasto'
       if (key === 'amount') return Number(transaction.amount).toFixed(2).replace('.', ',')
       return transaction[key]

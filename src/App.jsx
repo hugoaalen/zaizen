@@ -68,7 +68,7 @@ function App() {
       const localPreferences = preferencesRef.current
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('theme,monthly_chart,yearly_chart,chart_palette,accent_color,density,initial_view')
+        .select('theme,monthly_chart,yearly_chart,chart_palette,accent_color,density,initial_view,payment_methods')
         .eq('user_id', userId)
         .maybeSingle()
 

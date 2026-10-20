@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PaymentMethodField from './PaymentMethodField'
 import { useFeedback } from './FeedbackProvider'
 import { supabase } from './supabaseClient'
 import { CATEGORY_MAP, BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
@@ -19,10 +20,12 @@ export default function ExpenseForm({
   onTransactionAdded,
   customCategories,
   initialType = 'expense',
+  paymentMethodsEnabled = false,
   onCancel
 }) {
   const { notify } = useFeedback()
   const [amount, setAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState(initialType)
   const [startDate, setStartDate] = useState(new Date()) 
@@ -87,7 +90,8 @@ export default function ExpenseForm({
         description: description,
         type: type,
         category: category,
-        date: toDatabaseDate(startDate)
+        date: toDatabaseDate(startDate),
+        ...(paymentMethodsEnabled ? { payment_method: paymentMethod || null } : {})
       }])
 
     if (error) {
@@ -162,6 +166,7 @@ export default function ExpenseForm({
           </label>
         </div>
 
+        {paymentMethodsEnabled && <PaymentMethodField type={type} value={paymentMethod} onChange={setPaymentMethod} />}
         <div className="modal-actions">
           {onCancel && <button type="button" className="btn-outline" onClick={onCancel}>Cancelar</button>}
           <button type="submit" disabled={loading} className="btn-minimal">

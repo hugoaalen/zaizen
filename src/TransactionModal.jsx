@@ -7,6 +7,7 @@ export default function TransactionModal({
   type,
   user,
   customCategories,
+  paymentMethodsEnabled,
   onClose,
   onTransactionAdded
 }) {
@@ -41,6 +42,7 @@ export default function TransactionModal({
           key={type}
           user={user}
           customCategories={customCategories}
+          paymentMethodsEnabled={paymentMethodsEnabled}
           initialType={type}
           onCancel={onClose}
           onTransactionAdded={() => {

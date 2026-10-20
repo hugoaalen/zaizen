@@ -1,4 +1,5 @@
 export const PREFERENCE_OPTIONS = {
+  paymentMethods: ['off', 'on'],
   theme: ['light', 'dark', 'system'],
   monthlyChart: ['circular', 'barras', 'mosaico', 'ranking', 'balance'],
   yearlyChart: ['barras', 'lineas', 'area'],
@@ -9,6 +10,7 @@ export const PREFERENCE_OPTIONS = {
 }
 
 const STORAGE_KEYS = {
+  paymentMethods: 'paymentMethods',
   theme: 'theme',
   monthlyChart: 'chartTypeMonthly',
   yearlyChart: 'chartTypeYearly',
@@ -35,6 +37,7 @@ export const getSystemTheme = () => {
 }
 
 export const getDefaultPreferences = () => ({
+  paymentMethods: 'off',
   theme: 'system',
   monthlyChart: 'ranking',
   yearlyChart: 'barras',
@@ -82,6 +85,7 @@ export const saveLocalPreferences = preferences => {
 }
 
 export const preferencesFromRow = row => sanitizePreferences({
+  paymentMethods: row?.payment_methods,
   theme: row?.theme,
   monthlyChart: row?.monthly_chart,
   yearlyChart: row?.yearly_chart,
@@ -96,6 +100,7 @@ export const preferencesToRow = (userId, preferences) => {
 
   return {
     user_id: userId,
+    payment_methods: safePreferences.paymentMethods,
     theme: safePreferences.theme,
     monthly_chart: safePreferences.monthlyChart,
     yearly_chart: safePreferences.yearlyChart,

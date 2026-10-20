@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PaymentMethodField from './PaymentMethodField'
 import { supabase } from './supabaseClient'
 import { BASE_EXPENSE_CATEGORIES, BASE_INCOME_CATEGORIES } from './constants'
 import {
@@ -25,10 +26,11 @@ const createInitialForm = () => ({
   chargeDay: '1',
   alwaysActive: true,
   startDate: new Date().toISOString().slice(0, 10),
-  endDate: ''
+  endDate: '',
+  paymentMethod: ''
 })
 
-export default function RecurringManager({ user, customCategories }) {
+export default function RecurringManager({ user, customCategories, paymentMethodsEnabled = false }) {
   const [subs, setSubs] = useState([])
   const [form, setForm] = useState(createInitialForm)
   const [editingId, setEditingId] = useState(null)
@@ -92,6 +94,7 @@ export default function RecurringManager({ user, customCategories }) {
     const formData = new FormData(e.currentTarget)
     const payload = {
       user_id: user.id,
+      ...(paymentMethodsEnabled ? { payment_method: form.paymentMethod || null } : {}),
       amount: Number(formData.get('amount')),
       description: String(formData.get('description')).trim(),
       type: String(formData.get('type')),
@@ -126,6 +129,7 @@ export default function RecurringManager({ user, customCategories }) {
     setFormOpen(true)
     setForm({
       amount: String(subscription.amount),
+      paymentMethod: subscription.payment_method || '',
       description: subscription.description,
       type: subscription.type,
       category: getPreferredCategoryName(subscription.category, preferredCategories),
@@ -203,6 +207,7 @@ export default function RecurringManager({ user, customCategories }) {
             {getAvailableCategories().map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
+        {paymentMethodsEnabled && <PaymentMethodField type={form.type} value={form.paymentMethod} onChange={value => updateForm('paymentMethod', value)} />}
         <label>
           Frecuencia
           <select className="input-minimal" name="frequency" value={form.frequency} onChange={e => updateForm('frequency', e.target.value)}>

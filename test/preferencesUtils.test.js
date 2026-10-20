@@ -19,6 +19,7 @@ test('sanitizes unsupported preference values', () => {
     }),
     {
       theme: 'dark',
+      paymentMethods: 'off',
       monthlyChart: 'ranking',
       yearlyChart: 'area',
       chartPalette: 'vibrante',
@@ -42,6 +43,7 @@ test('maps database preferences to application preferences', () => {
     }),
     {
       theme: 'light',
+      paymentMethods: 'off',
       monthlyChart: 'mosaico',
       yearlyChart: 'lineas',
       chartPalette: 'pastel',
