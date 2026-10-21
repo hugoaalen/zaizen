@@ -273,6 +273,22 @@ select.input-minimal { padding-right: 44px; cursor: pointer; background-position
 .settings-account-footer strong, .settings-account-footer small { display: block; }
 .settings-account-footer small { color: var(--text-muted); overflow-wrap: anywhere; font-size: 12px; }
 .settings-account-footer button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; }
+.settings-account-footer .btn-outline {
+  color: var(--color-expense);
+  border-color: color-mix(in srgb, var(--color-expense) 25%, var(--border-color));
+  background: color-mix(in srgb, var(--color-expense) 8%, var(--bg-card));
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-expense) 10%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .settings-account-footer .btn-outline:hover { background: color-mix(in srgb, var(--color-expense) 14%, var(--bg-card)); }
+}
+@media (min-width: 701px) and (max-width: 1200px) {
+  .yearly-summary { grid-template-columns: minmax(0, 1fr); }
+  .yearly-summary .yearly-balance { min-height: auto; border-right: 0; border-bottom: 1px solid var(--border-color); }
+  .yearly-summary .yearly-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 20px 16px; border-bottom: 1px solid var(--border-color); }
+  .yearly-summary .yearly-metrics strong { font-size: clamp(18px, 2.2vw, 24px); }
+  .yearly-summary .yearly-highlight { border-left: 0; }
+}
 @media (max-width: 360px) { .settings-account-footer { align-items: stretch; flex-direction: column; } }
 .settings-section-heading h3 { font-size: 18px; }
 .settings-section-heading p { line-height: 1.6; }
