@@ -285,7 +285,7 @@ select.input-minimal { padding-right: 44px; cursor: pointer; background-position
 @media (min-width: 701px) and (max-width: 1200px) {
   .yearly-summary { grid-template-columns: minmax(0, 1fr); }
   .yearly-summary .yearly-balance { min-height: auto; border-right: 0; border-bottom: 1px solid var(--border-color); }
-  .yearly-summary .yearly-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 20px 16px; border-bottom: 1px solid var(--border-color); }
+  .yearly-summary .yearly-metrics { padding: 20px 16px; border-bottom: 1px solid var(--border-color); }
   .yearly-summary .yearly-metrics strong { font-size: clamp(18px, 2.2vw, 24px); }
   .yearly-summary .yearly-highlight { border-left: 0; }
 }

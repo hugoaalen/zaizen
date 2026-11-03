@@ -3220,8 +3220,8 @@ textarea:focus-visible,
 
 .yearly-metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   padding: 22px 10px;
 }
 
@@ -3239,7 +3239,7 @@ textarea:focus-visible,
   display: block;
   margin-top: 8px;
   font-size: 18px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .yearly-highlight {
@@ -3252,8 +3252,8 @@ textarea:focus-visible,
 }
 
 .yearly-highlight strong {
-  margin: 9px 0 4px;
-  font-size: 25px;
+  margin: 5px 0 3px;
+  font-size: 17px;
 }
 
 .yearly-chart-card {
@@ -3823,18 +3823,11 @@ textarea:focus-visible,
   }
 
   .yearly-metrics {
-    grid-template-columns: 1fr;
-    padding: 0;
+    padding: 12px 6px;
   }
 
   .yearly-metrics article {
-    padding: 16px 22px;
-    border-right: 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .yearly-metrics article:last-child {
-    border-bottom: 0;
+    padding: 8px 14px;
   }
 
   .summary-metrics article {
